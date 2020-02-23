@@ -1,1 +1,4 @@
 libgit2*
+lg2.wasm
+lg2.js
+.DS_Store

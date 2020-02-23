@@ -1,0 +1,7 @@
+{
+    "name": "wasm-git",
+    "version": "0.0.1",
+    "author": {"name": "Peter Salomonsen", "url": "https://petersalomonsen.com"},
+    "repository": {"url": "https://github.com/petersalomonsen/wasm-git"},
+    "files": ["lg2.js", "lg2.wasm", "README.md"]
+}
