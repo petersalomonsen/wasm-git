@@ -4,11 +4,22 @@ WASM-GIT
 
 GIT for nodejs and the browser using [libgit2](https://libgit2.org/) compiled to WebAssembly with [Emscripten](https://emscripten.org).
 
-**This is dependent on mmap fixes in emscripten:**
+# Demo
+
+A simple demo in the browser can be found at:
+
+https://githttpserverdemo.petersalomonsen.usw1.kubesail.io/
+
+**Please do not abuse, this is open for you to test and see the proof of concept**
+
+# Building
+
+**IMPORTANT: This depends on the following mmap fixes for emscripten:**
 
 - https://github.com/emscripten-core/emscripten/pull/10095
 - https://github.com/emscripten-core/emscripten/pull/10526
 
+Run [setup.sh](setup.sh) first to download libgit2 and apply patches.
 
 The script in [emscriptenbuild/build.sh](emscriptenbuild/build.sh) shows how to configure and build, and you'll find the resulting `lg2.js` / `lg2.wasm` under the generated `emscriptenbuild/examples` folder.
 
