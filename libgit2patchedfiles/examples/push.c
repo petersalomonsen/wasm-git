@@ -13,7 +13,6 @@
  */
 
 #include "common.h"
-#include "remote.h"
 
 /**
  * This example demonstrates the libgit2 push API to roughly
@@ -36,11 +35,16 @@ int lg2_push(git_repository *repo, int argc, char **argv) {
 	git_push_options options;
 	git_remote* remote = NULL;
 	char *refspec = "refs/heads/master";
-
-	const git_strarray refspecs = {
+    const git_strarray refspecs = {
 		&refspec,
 		1,
 	};
+
+    /* Validate args */
+	if (argc > 1) {
+		printf ("USAGE: %s\n\nsorry, no arguments supported yet\n", argv[0]);
+		return -1;
+	}
 
 	git_remote_lookup( &remote, repo, "origin" );
 	
@@ -56,5 +60,8 @@ int lg2_push(git_repository *repo, int argc, char **argv) {
 		if (err) printf("ERROR %d: %s\n", err->klass, err->message);
 		else printf("ERROR %d: no detailed info\n", error);
 	}
+
+    printf("pushed\n");
 	return error;
 }
+
