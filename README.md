@@ -4,13 +4,83 @@ WASM-GIT
 
 GIT for nodejs and the browser using [libgit2](https://libgit2.org/) compiled to WebAssembly with [Emscripten](https://emscripten.org).
 
-# Demo
+# Demo in the browser
 
 A simple demo in the browser can be found at:
 
 https://githttpserverdemo.petersalomonsen.usw1.kubesail.io/
 
 **Please do not abuse, this is open for you to test and see the proof of concept**
+
+# Example WebWorker with pre built binaries
+
+For running in the browser you should have your git interaction code in a [webworker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers). This is because of the use of synchronous http requests and long running operations that would block if running on the main thread.
+
+Here's an example of a simple webworker that uses pre-built binaries from https://unpkg.com/wasm-git@0.0.1/
+
+```
+var Module = {
+    locateFile: function(s) {
+      return 'https://unpkg.com/wasm-git@0.0.1/' + s;
+    }
+};
+
+importScripts('https://unpkg.com/wasm-git@0.0.1/lg2.js');
+
+Module.onRuntimeInitialized = () => {
+    const lg = Module;
+
+    FS.mkdir('/working');
+    FS.mount(MEMFS, { }, '/working');
+    FS.chdir('/working');    
+
+    FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
+                'name = Test User\n' +
+                'email = test@example.com');
+
+    // clone a local git repository and make some commits
+
+    lg.callMain(['clone',`http://localhost:5000/test.git`, 'testrepo']);
+
+    FS.readdir('testrepo');
+}
+```
+
+You'll start the worker from your html with the tag:
+
+`<script>new Worker('yourworker.js')</script>;`
+
+The example above expects to find a git repository at `http://localhost:5000/test.git`. If you want to clone from github you'd need a proxy running locally because of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) restrictions that would prevent you
+accessing github directly. For testing you can use the proxy found in [examples/webserverwithgithubproxy.js](examples/webserverwithgithubproxy.js)
+
+# Use from nodejs with pre built binaries
+
+You may install the npm package containing the binaries:
+
+`npm install wasm-git`
+
+example source code for cloning a repository from github:
+
+```
+const lg = require('./node_modules/wasm-git/lg2.js');
+
+lg.onRuntimeInitialized = () => {
+    const FS = lg.FS;
+    const MEMFS = FS.filesystems.MEMFS;
+
+    FS.mkdir('/working');
+    FS.mount(MEMFS, { }, '/working');
+    FS.chdir('/working');    
+
+    FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
+                'name = Test User\n' +
+                'email = test@example.com');
+    
+    // clone a repository from github
+    lg.callMain(['clone','https://github.com/torch2424/made-with-webassembly.git', 'made-with-webassembly']);
+    FS.readdir('made-with-webassembly');
+}
+```
 
 # Building
 
