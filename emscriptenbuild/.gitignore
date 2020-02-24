@@ -3,3 +3,4 @@ src
 deps
 examples
 libgit2*
+Makefile

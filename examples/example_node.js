@@ -13,7 +13,7 @@ lg.onRuntimeInitialized = () => {
                 'email = test@example.com');
     
     // clone a repository from github
-    lg.callMain(['clone','http://localhost:5000/torch2424/made-with-webassembly.git','clonedtest']);
+    lg.callMain(['clone','https://github.com/torch2424/made-with-webassembly.git','clonedtest']);
     
     FS.chdir('clonedtest');
     console.log(FS.readdir('.'));
