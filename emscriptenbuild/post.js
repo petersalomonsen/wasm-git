@@ -5,17 +5,15 @@
 const emscriptenhttpconnections = {};
 let httpConnectionNo = 0;
 
-const nodePermissions = FS.nodePermissions;
+const chmod = FS.chmod;
     
-FS.nodePermissions = function(node, perms) { 
-    if(node.mode & 0o100000) {
-        /* 
-            * Emscripten doesn't support the sticky bit, while libgit2 sets this on some files.
-            * grant permission if sticky bit is set
-            */        
-        return 0;
+FS.chmod = function(path, mode, dontFollow) { 
+    if (mode === 0o100000 > 0) {
+        // workaround for libgit2 calling chmod with only S_IFREG set (permisions 0000)
+        // reason currently not known
+        return chmod(path, mode, dontFollow);
     } else {
-        return nodePermissions(node, perms);
+        return 0;
     }
 };
 

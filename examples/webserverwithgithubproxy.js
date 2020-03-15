@@ -33,11 +33,6 @@ function onRequest(request, response) {
             path = 'index.html';
         }
 
-        if(path.indexOf('lg2.') === 0) {
-            // lg2.js and lg2.wasm are in the examples folder
-            path = 'examples/' + path;
-        }
-
         if(fs.existsSync(path)) {
             if(path.indexOf('.js') === path.length-3) {
                 response.setHeader('Content-Type', 'application/javascript');

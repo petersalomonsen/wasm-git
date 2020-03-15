@@ -89,6 +89,10 @@ lg.onRuntimeInitialized = () => {
 - https://github.com/emscripten-core/emscripten/pull/10095
 - https://github.com/emscripten-core/emscripten/pull/10526
 
+for using with `NODEFS` you'll also need https://github.com/emscripten-core/emscripten/pull/10669
+
+All of these pull requests are merged to emscripten master as of 2020-03-15.
+
 Run [setup.sh](setup.sh) first to download libgit2 and apply patches.
 
 The script in [emscriptenbuild/build.sh](emscriptenbuild/build.sh) shows how to configure and build, and you'll find the resulting `lg2.js` / `lg2.wasm` under the generated `emscriptenbuild/examples` folder.
