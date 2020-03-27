@@ -88,6 +88,7 @@ lg.onRuntimeInitialized = () => {
 
 - https://github.com/emscripten-core/emscripten/pull/10095
 - https://github.com/emscripten-core/emscripten/pull/10526
+- https://github.com/emscripten-core/emscripten/pull/10782
 
 for using with `NODEFS` you'll also need https://github.com/emscripten-core/emscripten/pull/10669
 
