@@ -12,6 +12,8 @@ https://githttpserverdemo.petersalomonsen.usw1.kubesail.io/
 
 **Please do not abuse, this is open for you to test and see the proof of concept**
 
+The sources for the demo can be found in the [githttpserver](https://github.com/petersalomonsen/githttpserver) project, which is a simple git server deployable to [kubernetes](https://github.com/kubernetes/kubernetes). Showing basic operations like cloning, edit files, add and commit, push and pull.
+
 # Example WebWorker with pre built binaries
 
 For running in the browser you should have your git interaction code in a [webworker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers). This is because of the use of synchronous http requests and long running operations that would block if running on the main thread.
@@ -21,11 +23,11 @@ Here's an example of a simple webworker that uses pre-built binaries from https:
 ```
 var Module = {
     locateFile: function(s) {
-      return 'https://unpkg.com/wasm-git@0.0.1/' + s;
+      return 'https://unpkg.com/wasm-git@0.0.2/' + s;
     }
 };
 
-importScripts('https://unpkg.com/wasm-git@0.0.1/lg2.js');
+importScripts('https://unpkg.com/wasm-git@0.0.2/lg2.js');
 
 Module.onRuntimeInitialized = () => {
     const lg = Module;
@@ -92,7 +94,7 @@ lg.onRuntimeInitialized = () => {
 
 for using with `NODEFS` you'll also need https://github.com/emscripten-core/emscripten/pull/10669
 
-All of these pull requests are merged to emscripten master as of 2020-03-15.
+All of these pull requests are merged to emscripten master as of 2020-03-29.
 
 Run [setup.sh](setup.sh) first to download libgit2 and apply patches.
 
