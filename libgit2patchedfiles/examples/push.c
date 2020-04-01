@@ -29,15 +29,14 @@
  * 
  */
 
+/** Entry point for this command */
 int lg2_push(git_repository *repo, int argc, char **argv) {
-    // get the remote.
-	int error;
 	git_push_options options;
 	git_remote* remote = NULL;
 	char *refspec = "refs/heads/master";
-    const git_strarray refspecs = {
+	const git_strarray refspecs = {
 		&refspec,
-		1,
+		1
 	};
 
     /* Validate args */
@@ -46,22 +45,12 @@ int lg2_push(git_repository *repo, int argc, char **argv) {
 		return -1;
 	}
 
-	git_remote_lookup( &remote, repo, "origin" );
+	check_lg2(git_remote_lookup(&remote, repo, "origin" ), "Unable to lookup remote", NULL);
 	
-	// configure options
-	git_push_options_init( &options, GIT_PUSH_OPTIONS_VERSION );
+	check_lg2(git_push_options_init(&options, GIT_PUSH_OPTIONS_VERSION ), "Error initializing push", NULL);
 
-	// do the push
+	check_lg2(git_remote_push(remote, &refspecs, &options), "Error pushing", NULL);
 
-	error = git_remote_push( remote, &refspecs, &options);
-
-	if (error != 0) {
-		const git_error *err = git_error_last();
-		if (err) printf("ERROR %d: %s\n", err->klass, err->message);
-		else printf("ERROR %d: no detailed info\n", error);
-	}
-
-    printf("pushed\n");
-	return error;
+	printf("pushed\n");
+	return 0;
 }
-
