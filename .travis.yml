@@ -1,0 +1,18 @@
+language: node_js
+node_js:
+  - 14
+
+install:
+  - npm install
+  - sh setup.sh
+  - git clone https://github.com/emscripten-core/emsdk.git
+  - cd emsdk
+  - ./emsdk install latest
+  - ./emsdk activate latest
+  - cd ..
+  - source ./emsdk/emsdk_env.sh
+  - cd emscriptenbuild
+  - ./build.sh
+  - cd ..
+
+script: "npm run test"
