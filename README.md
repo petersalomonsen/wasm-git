@@ -20,7 +20,7 @@ For running in the browser you should have your git interaction code in a [webwo
 
 Here's an example of a simple webworker that uses pre-built binaries from https://unpkg.com/wasm-git@0.0.1/
 
-```
+```js
 var Module = {
     locateFile: function(s) {
       return 'https://unpkg.com/wasm-git@0.0.2/' + s;
@@ -63,7 +63,7 @@ You may install the npm package containing the binaries:
 
 example source code for cloning a repository from github:
 
-```
+```js
 const lg = require('./node_modules/wasm-git/lg2.js');
 
 lg.onRuntimeInitialized = () => {
