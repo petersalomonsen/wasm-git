@@ -15,4 +15,7 @@ install:
   - ./build.sh
   - cd ..
 
-script: "npm run test"
+script:
+- |
+  npm run test
+  npm run test-browser
