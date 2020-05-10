@@ -14,9 +14,16 @@
         "README.md"
     ],
     "scripts": {
-        "test": "mocha"
+        "test": "mocha",
+        "test-browser": "karma start --single-run --browsers ChromeHeadless karma.conf.js"
     },
     "devDependencies": {
+        "cgi": "^0.3.1",
+        "chai": "^4.2.0",
+        "karma": "^5.0.5",
+        "karma-chai": "^0.1.0",
+        "karma-chrome-launcher": "^3.1.0",
+        "karma-mocha": "^2.0.1",
         "mocha": "^7.1.1"
     }
 }

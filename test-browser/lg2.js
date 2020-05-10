@@ -1,0 +1,1 @@
+../emscriptenbuild/examples/lg2.js

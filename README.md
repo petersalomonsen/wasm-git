@@ -2,6 +2,8 @@ WASM-GIT
 ========
 (WASM should be pronounced like `awesome` starting with a `W` ).
 
+![](https://travis-ci.com/petersalomonsen/wasm-git.svg?branch=master)
+
 GIT for nodejs and the browser using [libgit2](https://libgit2.org/) compiled to WebAssembly with [Emscripten](https://emscripten.org).
 
 # Demo in the browser
@@ -96,9 +98,11 @@ for using with `NODEFS` you'll also need https://github.com/emscripten-core/emsc
 
 All of these pull requests are merged to emscripten master as of 2020-03-29.
 
+See [.travis.yml](.travis.yml) for a full build and test pipeline including installing emscripten.
+
 Run [setup.sh](setup.sh) first to download libgit2 and apply patches.
 
-The script in [emscriptenbuild/build.sh](emscriptenbuild/build.sh) shows how to configure and build, and you'll find the resulting `lg2.js` / `lg2.wasm` under the generated `emscriptenbuild/examples` folder.
+Given you have installed and activated emscripten, you can use the script in [emscriptenbuild/build.sh](emscriptenbuild/build.sh) to configure and build, and you'll find the resulting `lg2.js` / `lg2.wasm` under the generated `emscriptenbuild/examples` folder.
 
 An example of interacting with libgit2 from nodejs can be found in [examples/example_node.js](examples/example_node.js).
 
