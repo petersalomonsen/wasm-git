@@ -1,4 +1,7 @@
 libgit2
+libgit2-*
+lg2.js
+lg2.wasm
 .DS_Store
 .vscode
 node_modules
