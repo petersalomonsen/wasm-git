@@ -19,3 +19,11 @@ script:
 - |
   npm run test
   npm run test-browser
+  ./preparepublishnpm.sh
+  set -e
+  PACKAGEFILE=`npm pack | tail -n 1`
+  tar -xvzf $PACKAGEFILE
+  rm test-browser/lg2.*
+  echo "run browser tests with npm package"
+  cp package/lg2.* test-browser/
+  npm run test-browser
