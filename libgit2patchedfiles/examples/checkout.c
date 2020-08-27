@@ -250,7 +250,6 @@ int lg2_checkout(git_repository *repo, int argc, char **argv)
 	checkout_options opts;
 	git_repository_state_t state;
 	git_annotated_commit *checkout_target = NULL;
-	git_strarray paths;
 
 	int err = 0;
 	const char *path = ".";
@@ -263,7 +262,7 @@ int lg2_checkout(git_repository *repo, int argc, char **argv)
 	if (state != GIT_REPOSITORY_STATE_NONE) {
 		fprintf(stderr, "repository is in unexpected state %d\n", state);
 		goto cleanup;
-	}	
+	}
 
 	if (match_arg_separator(&args)) {
 		/**
@@ -271,13 +270,24 @@ int lg2_checkout(git_repository *repo, int argc, char **argv)
 		 */
 
 		git_checkout_options copts = GIT_CHECKOUT_OPTIONS_INIT;
+		git_strarray paths;
+
 		copts.checkout_strategy = GIT_CHECKOUT_FORCE;
 
 		paths.count = args.argc - args.pos;
+		
+		if (paths.count == 0) {
+			fprintf(stderr, "error: no paths specified\n");
+			return GIT_ERROR_INVALID;
+		}
+
 		paths.strings = &args.argv[args.pos];
 		copts.paths = paths;
 
 		err = git_checkout_head(repo, &copts);
+		if (err != 0) {
+			fprintf(stderr, "error: %s\n", git_error_last()->message);
+		}
 		return err;
 	} else {
 		/**
