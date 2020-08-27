@@ -1,3 +1,4 @@
+const assert = require('assert');
 const lgPromise = require('./common.js').lgPromise;
 
 describe('git fetch', () => {
@@ -14,7 +15,7 @@ describe('git fetch', () => {
         FS.chdir('test1');
         FS.writeFile('test.txt', 'abcdef');
         lg.callMain(['add', 'test.txt']);
-        lg.callMain(['commit', '-m', 'test commit']);
+        lg.callMain(['commit', '-m', 'test commit 1']);
         lg.callMain(['push']);
         FS.chdir('..');
         
@@ -34,6 +35,8 @@ describe('git fetch', () => {
         lg.callMain(['fetch', 'origin']);
         lg.callMain(['merge', 'origin/master']);
         
-        lg.callMain(['log']);
+        const result = lg.callWithOutput(['log']);
+        assert.ok(result.indexOf('test commit 2') > 0);
+        assert.ok(result.indexOf('test commit 1') > result.indexOf('test commit 2') > 0);
     });
 });
