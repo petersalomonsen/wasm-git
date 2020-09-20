@@ -10,7 +10,7 @@ GIT for nodejs and the browser using [libgit2](https://libgit2.org/) compiled to
 
 A simple demo in the browser can be found at:
 
-https://githttpserverdemo.petersalomonsen.usw1.kubesail.io/
+https://wasm-git.petersalomonsen.com/
 
 **Please do not abuse, this is open for you to test and see the proof of concept**
 
