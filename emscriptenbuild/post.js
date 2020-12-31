@@ -1,5 +1,12 @@
 /**
- * Javascript functions for emscripten http transport for nodejs and the browser
+ * Javascript functions for emscripten http transport for nodejs and the browser using a webworker
+ * 
+ * If you can't use a webworker, you can build Release-async or Debug-async versions of wasm-git
+ * which use async transports, and can be run without a webworker. The lg2 release files are about
+ * twice the size with this option, and your UI may be affected by doing git operations in the
+ * main JavaScript thread.
+ * 
+ * This the non-webworker version (see also post-async.js)
  */
 
 const emscriptenhttpconnections = {};
