@@ -57,6 +57,20 @@ You'll start the worker from your html with the tag:
 The example above expects to find a git repository at `http://localhost:5000/test.git`. If you want to clone from github you'd need a proxy running locally because of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) restrictions that would prevent you
 accessing github directly. For testing you can use the proxy found in [examples/webserverwithgithubproxy.js](examples/webserverwithgithubproxy.js)
 
+# Use in Browser without a WebWorker
+A webworker is more performant but for cases where you really need to work in the browser, the http requests must be asynchronous and not synchronous as in the default builds.
+
+If you use the `emscriptenbuilds/build.sh` you can build `async` versions with:
+```
+./build.sh Release-async
+```
+and
+```
+./build.sh Debug-async
+```
+Note that the compiled output is about twice the size for non-async builds, and that git operations will take place on the main thread which can affect reponsiveness of your web UI.
+
+See below for more details on building using `build.sh`.
 # Use from nodejs with pre built binaries
 
 You may install the npm package containing the binaries:
