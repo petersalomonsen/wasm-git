@@ -1,6 +1,6 @@
-WASM-GIT
+Wasm-git
 ========
-(WASM should be pronounced like `awesome` starting with a `W` ).
+(Wasm should be pronounced like `awesome` starting with a `W` ).
 
 ![](https://travis-ci.com/petersalomonsen/wasm-git.svg?branch=master)
 
