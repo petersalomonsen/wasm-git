@@ -38,8 +38,10 @@ function startServer() {
         } else if (path.indexOf('git-upload') > -1 && request.method === 'GET') {
             response.end("001e# service=git-upload-pack\n00000000\n");
         } else if (path.indexOf('git-receive') > -1 && request.method === 'GET') {
-
-            response.end('009f0000000000000000000000000000000000000000\n0000');
+            response.end('001f# service=git-receive-pack\n0000009f0000000000000000000000000000000000000000 capabilities^{}\0report-status delete-refs side-band-64k quiet atomic ofs-delta agent=git/2.21.0.(Apple.Git-122.2)\n0000')
+            //gitcgi(request, response);
+        } else if (path.indexOf('git-receive') > -1 && request.method === 'POST') {
+            request.pipe(fs.createWriteStream('out.bin'));
         } else {
             response.statusCode = 404;
             response.end('not found');
