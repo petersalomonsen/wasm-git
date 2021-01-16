@@ -1,12 +1,12 @@
 /**
- * Javascript functions for emscripten http transport for nodejs and the browser using a webworker
+ * Javascript functions for emscripten http transport for nodejs and the browser NOT using a webworker
  * 
  * If you can't use a webworker, you can build Release-async or Debug-async versions of wasm-git
  * which use async transports, and can be run without a webworker. The lg2 release files are about
  * twice the size with this option, and your UI may be affected by doing git operations in the
  * main JavaScript thread.
  * 
- * This the non-webworker version (see also post-async.js)
+ * This the non-webworker version (see also post.js)
  */
 
 const emscriptenhttpconnections = {};
@@ -24,15 +24,25 @@ FS.chmod = function(path, mode, dontFollow) {
     }
 };
 
-if(ENVIRONMENT_IS_WORKER) {
+if(ENVIRONMENT_IS_WEB) {
+    Module.oldCallMain = Module.callMain
+    Module.callMain = async (args) => {
+        await Module.oldCallMain(args);
+        var runningAsync = typeof Asyncify === 'object' && Asyncify.currData;
+        if (runningAsync) {
+            await new Promise((resolve) => { Asyncify.asyncFinalizers.push(() => { resolve();}); });
+        }
+    };
+
     Object.assign(Module, {
-        emscriptenhttpconnect: function(url, buffersize, method, headers) {
+        emscriptenhttpconnect: async function(url, buffersize, method, headers) {
+          let result = new Promise((resolve, reject) => {
             if(!method) {
-                method = 'GET';
+              method = 'GET';
             }
 
             const xhr = new XMLHttpRequest();
-            xhr.open(method, url, false);
+            xhr.open(method, url, true);
             xhr.responseType = 'arraybuffer';
 
             if (headers) {
@@ -46,10 +56,15 @@ if(ENVIRONMENT_IS_WORKER) {
             };
             
             if(method === 'GET') {
-                xhr.send();
+              xhr.onload = function () {
+                resolve(httpConnectionNo++);
+              };
+              xhr.send();
+            } else {
+              resolve(httpConnectionNo++);
             }
-
-            return httpConnectionNo++;
+          });
+          return result;
         },
         emscriptenhttpwrite: function(connectionNo, buffer, length) {
             const connection = emscriptenhttpconnections[connectionNo];
@@ -63,20 +78,33 @@ if(ENVIRONMENT_IS_WORKER) {
                 connection.content = content;
             }            
         },
-        emscriptenhttpread: function(connectionNo, buffer, buffersize) { 
-            const connection = emscriptenhttpconnections[connectionNo];
-            if(connection.content) {
-                connection.xhr.send(connection.content.buffer);
-                connection.content = null;
-            }
+        emscriptenhttpread: async function(connectionNo, buffer, buffersize) {
+          const connection = emscriptenhttpconnections[connectionNo];
+
+          function handleResponse(connection, buffer, buffersize) {
             let bytes_read = connection.xhr.response.byteLength - connection.resultbufferpointer;
             if (bytes_read > buffersize) {
-                bytes_read = buffersize;
+              bytes_read = buffersize;
             }
             const responseChunk = new Uint8Array(connection.xhr.response, connection.resultbufferpointer, bytes_read);
             writeArrayToMemory(responseChunk, buffer);
             connection.resultbufferpointer += bytes_read;
             return bytes_read;
+          }
+
+          let result = new Promise((resolve) => {
+              if(connection.content) {
+                    connection.xhr.onload = function () {
+                    resolve(handleResponse(connection, buffer, buffersize));
+                };
+                connection.xhr.send(connection.content.buffer);
+                connection.content = null;
+              } else {
+                resolve(handleResponse(connection, buffer, buffersize));
+              }
+          });
+
+          return result;
         },
         emscriptenhttpfree: function(connectionNo) {
             delete emscriptenhttpconnections[connectionNo];

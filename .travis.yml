@@ -1,29 +1,57 @@
-language: node_js
-node_js:
-  - 14
+matrix:
+  include:
+    - language: node_js
+      name: "default"
+      dist: focal
+      os: linux
+      node_js:
+        - 14
 
-install:
-  - npm install
-  - sh setup.sh
-  - git clone https://github.com/emscripten-core/emsdk.git
-  - cd emsdk
-  - ./emsdk install latest
-  - ./emsdk activate latest
-  - cd ..
-  - source ./emsdk/emsdk_env.sh
-  - cd emscriptenbuild
-  - ./build.sh
-  - cd ..
+      install:
+        - npm install
+        - sh setup.sh
+        - git clone https://github.com/emscripten-core/emsdk.git
+        - cd emsdk
+        - ./emsdk install latest
+        - ./emsdk activate latest
+        - cd ..
+        - source ./emsdk/emsdk_env.sh
+        - cd emscriptenbuild
+        - ./build.sh
+        - cd ..
+      script:
+      - |
+        set -e
+        npm run test
+        npm run test-browser
+        ./preparepublishnpm.sh  
+        PACKAGEFILE=`npm pack | tail -n 1`
+        tar -xvzf $PACKAGEFILE
+        rm test-browser/lg2.*
+        echo "run browser tests with npm package"
+        cp package/lg2.* test-browser/
+        npm run test-browser
+        
+    - language: node_js
+      name: "asyncify"
+      dist: focal
+      os: linux
+      node_js:
+        - 14
 
-script:
-- |
-  set -e
-  npm run test
-  npm run test-browser
-  ./preparepublishnpm.sh  
-  PACKAGEFILE=`npm pack | tail -n 1`
-  tar -xvzf $PACKAGEFILE
-  rm test-browser/lg2.*
-  echo "run browser tests with npm package"
-  cp package/lg2.* test-browser/
-  npm run test-browser
+      install:
+        - npm install
+        - sh setup.sh
+        - git clone https://github.com/emscripten-core/emsdk.git
+        - cd emsdk
+        - ./emsdk install latest
+        - ./emsdk activate latest
+        - cd ..
+        - source ./emsdk/emsdk_env.sh
+        - cd emscriptenbuild
+        - ./build.sh Release-async
+        - cd ..
+      script:
+      - |
+        set -e
+        npm run test-browser-async

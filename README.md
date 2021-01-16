@@ -1,6 +1,6 @@
-WASM-GIT
+Wasm-git
 ========
-(WASM should be pronounced like `awesome` starting with a `W` ).
+(Wasm should be pronounced like `awesome` starting with a `W` ).
 
 ![](https://travis-ci.com/petersalomonsen/wasm-git.svg?branch=master)
 
@@ -57,6 +57,75 @@ You'll start the worker from your html with the tag:
 The example above expects to find a git repository at `http://localhost:5000/test.git`. If you want to clone from github you'd need a proxy running locally because of [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) restrictions that would prevent you
 accessing github directly. For testing you can use the proxy found in [examples/webserverwithgithubproxy.js](examples/webserverwithgithubproxy.js)
 
+# Use in Browser without a WebWorker
+A webworker is more performant but for cases where you really need to work in the browser, the http requests must be asynchronous and not synchronous as in the default builds.
+
+If you use the `emscriptenbuilds/build.sh` you can build `async` versions with:
+```
+./build.sh Release-async
+```
+and
+```
+./build.sh Debug-async
+```
+To use the async wasm-git build you need to load `lg2.js` using a `<script>` tag in HTML, and set up a method to wait for initialisation of the lg2 module. For example, your `index.html` can include the following, and set up a promise for your JavaScript implementation to `await`:
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<script src='/build/lg2.js'></script>
+  
+	<script>
+	window.lg2Ready = false;
+	window.lg2 = Module;
+	window.lg2ReadyPromise = new Promise((resolve) => {
+		Module.onRuntimeInitialized = () => {
+			window.lg2Ready = true;
+			resolve(true);
+		};
+	});
+	</script>
+
+<script defer src='/build/bundle.js'></script>
+</head>
+
+<body>
+</body>
+</html>
+```
+In your bundle, you will have JavaScript to `await window.lg2ReadyPromise` and can then use `await callMain()` to invoke `libgit2` features exposed by `wasm-git`. Notice you MUST use `await` on every `callMain()` which interacts with a remote repository (e.g. 'clone', 'push' and so on). Example:
+```javascript
+async function initApp() {
+	await window.lg2ReadyPromise;
+	await test();
+}
+
+async function test() {
+	const lg = window.lg2;
+    const FS = lg.FS;
+
+    const lg = Module;
+
+    FS.mkdir('/working');
+    FS.mount(MEMFS, { }, '/working');
+    FS.chdir('/working');    
+
+    FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
+                'name = Test User\n' +
+                'email = test@example.com');
+
+    // clone a local git repository and make some commits
+
+    await lg.callMain(['clone',`http://localhost:5000/test.git`, 'testrepo']);
+
+    FS.readdir('testrepo');
+}
+
+```
+
+Note that the compiled output is about twice the size for non-async builds, and that git operations will take place on the main thread which can affect reponsiveness of your web UI.
+
+See below for more details on building using `build.sh`.
 # Use from nodejs with pre built binaries
 
 You may install the npm package containing the binaries:

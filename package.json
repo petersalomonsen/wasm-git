@@ -15,7 +15,8 @@
     ],
     "scripts": {
         "test": "mocha test/**/*.spec.js",
-        "test-browser": "karma start --single-run --browsers ChromeHeadless karma.conf.js"
+        "test-browser": "karma start --single-run --browsers ChromeHeadless karma.conf.js",
+        "test-browser-async": "karma start --single-run --browsers ChromeHeadless karma.conf-async.js"
     },
     "devDependencies": {
         "cgi": "^0.3.1",
