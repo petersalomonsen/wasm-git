@@ -23,7 +23,7 @@ jobs:
           cd ..
           source ./emsdk/emsdk_env.sh
           cd emscriptenbuild
-          ./build.sh
+          ./build.sh Release
           cd ..
           set -e
           npm run test

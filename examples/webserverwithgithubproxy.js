@@ -9,13 +9,17 @@ const fs = require('fs');
 function onRequest(request, response) {
     let path = request.url.substring(1);
     console.log(path);
+
+    response.setHeader('Access-Control-Allow-Origin', '*');
+    response.setHeader('Access-Control-Allow-Headers', '*');
+
     if( path.indexOf('git-upload') > -1 ||
         path.indexOf('git-receive') > -1) {  
         const options = {
             hostname: 'github.com',
             port: 443,
             path: request.url,
-            method: request.method
+            method: request.method,
         };
 
         console.log(`Proxying ${options.method} request to ${options.hostname} with path ${options.path}`);
@@ -39,7 +43,6 @@ function onRequest(request, response) {
             } else if(path.indexOf('.wasm') === path.length-5) {
                 response.setHeader('Content-Type', 'application/wasm');
             }
-            
             response.end(fs.readFileSync(path));
         } else {
             response.statusCode = 404;
