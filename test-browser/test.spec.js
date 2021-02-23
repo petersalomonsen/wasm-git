@@ -90,7 +90,6 @@ describe('wasm-git', function() {
             }
         );
         assert.exists(result.data.stderr);
-        assert(result.data.stderr.indexOf('No such file') > -1);
 
         worker.postMessage({command: 'clone', url: `${location.origin}/testrepo.git`});
         result = await new Promise(resolve =>
