@@ -1,0 +1,36 @@
+name: Publish
+on:
+  push:
+    branches: [ master ]
+jobs:
+  default:
+    name: "Default"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Default
+        run: |
+          npm install
+          sh setup.sh
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          cd ..
+          source ./emsdk/emsdk_env.sh
+          cd emscriptenbuild
+          ./build.sh
+          cd ..
+          set -e
+          npm run test
+          npm run test-browser
+          ./preparepublishnpm.sh  
+          PACKAGEFILE=`npm pack | tail -n 1`
+          tar -xvzf $PACKAGEFILE
+          rm test-browser/lg2.*
+          echo "run browser tests with npm package"
+          cp package/lg2.* test-browser/
+          npm run test-browser
+          npm publish
+        env:
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
