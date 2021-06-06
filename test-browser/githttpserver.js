@@ -42,6 +42,11 @@ function startServer() {
             //gitcgi(request, response);
         } else if (path.indexOf('git-receive') > -1 && request.method === 'POST') {
             request.pipe(fs.createWriteStream('out.bin'));
+            response.statusCode = 200;
+            response.setHeader('Content-Type', 'application/x-git-receive-pack-result');
+            response.end(`0030${'\1'}000eunpack ok
+0019ok refs/heads/master
+00000000`);
         } else {
             response.statusCode = 404;
             response.end('not found');
