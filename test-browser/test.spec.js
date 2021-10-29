@@ -14,7 +14,7 @@ describe('wasm-git', function () {
         });
     }
 
-    const callWorker = async (command, params) => {        
+    const callWorker = async (command, params) => {
         return await new Promise(resolve => {
             worker.onmessage = msg => resolve(msg.data);
             worker.postMessage(Object.assign({
@@ -28,7 +28,7 @@ describe('wasm-git', function () {
             worker.postMessage({
                 command: command,
                 args: args
-            });    
+            });
         });
     };
 
@@ -93,7 +93,7 @@ describe('wasm-git', function () {
         await new Promise(r => setTimeout(r, 1000));
     });
 
-    it('remove the local clone of the repository', async () => {        
+    it('remove the local clone of the repository', async () => {
         assert.equal((await callWorker('deletelocal')).deleted, 'testrepo.git');
         worker.terminate();
     });
@@ -196,7 +196,7 @@ describe('wasm-git', function () {
         worker.terminate();
         await createWorker();
         assert.isTrue((await callWorker('synclocal', {url: `${location.origin}/testrepo.git`, newrepo: true })).empty);
-        
+
         await callWorkerWithArgs('init', '.');
         await callWorker(
             'writefile', {
