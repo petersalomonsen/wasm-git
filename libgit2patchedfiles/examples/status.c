@@ -216,7 +216,7 @@ static void print_conflicts(git_repository *repo) {
 			printf("conflict: a:%s o:%s t:%s\n",
 					ancestor!=NULL ? ancestor->path : "NULL",
 					our!=NULL ? our->path : "NULL",
-					their!=NULL ? their->path : "NULL");			
+					their!=NULL ? their->path : "NULL");
 		}
 
 		if (err != GIT_ITEROVER) {
@@ -224,7 +224,7 @@ static void print_conflicts(git_repository *repo) {
 		}
 
 		git_index_conflict_iterator_free(conflicts);
-	}	
+	}
 	git_index_free(index);
 }
 
