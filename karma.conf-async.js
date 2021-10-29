@@ -26,7 +26,7 @@ module.exports = function(config) {
     ],
 
     proxies: {
-      '/testrepo.git': 'http://localhost:5000/testrepo.git',
+      '/testrepo.git': 'http://localhost:8080/testrepo.git',
     },
 
     // preprocess matching files before serving them to the browser
