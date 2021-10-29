@@ -5,11 +5,13 @@
 
 function startServer() {
     const http = require('http');
+    const fs = require('fs');
     const cgi = require('cgi');
 
     const { tmpdir } = require('os');
     const { execSync } = require('child_process');
 
+    fs.rmdirSync(`${tmpdir()}/testrepo.git`, {recursive: true, force: true});
     execSync(`git init --bare ${tmpdir()}/testrepo.git`);
 
     const script = 'git';
@@ -38,7 +40,7 @@ function startServer() {
             response.statusCode = 404;
             response.end('not found');
         }
-    }).listen(5000);
+    }).listen(8080);
 }
 
 module.exports = {

@@ -27,7 +27,7 @@ module.exports = function(config) {
     ],
 
     proxies: {
-      '/testrepo.git': 'http://localhost:5000/testrepo.git',
+      '/testrepo.git': 'http://localhost:8080/testrepo.git',
     },
 
     // preprocess matching files before serving them to the browser
@@ -44,7 +44,7 @@ module.exports = function(config) {
 
     // web server port
     port: 9876,
-
+    browserNoActivityTimeout: 10000,
 
     // enable / disable colors in the output (reporters and logs)
     colors: true,

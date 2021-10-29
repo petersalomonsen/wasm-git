@@ -25,12 +25,11 @@ FS.chmod = function(path, mode, dontFollow) {
 };
 
 if(ENVIRONMENT_IS_WEB) {
-    Module.oldCallMain = Module.callMain
+    Module.origCallMain = Module.callMain;
     Module.callMain = async (args) => {
-        await Module.oldCallMain(args);
-        var runningAsync = typeof Asyncify === 'object' && Asyncify.currData;
-        if (runningAsync) {
-            await new Promise((resolve) => { Asyncify.asyncFinalizers.push(() => { resolve();}); });
+        await Module.origCallMain(args);
+        if (typeof Asyncify === 'object' && Asyncify.currData) {            
+            await Asyncify.whenDone();
         }
     };
 
