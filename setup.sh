@@ -1,6 +1,6 @@
-curl -L https://github.com/libgit2/libgit2/releases/download/v1.0.1/libgit2-1.0.1.tar.gz --output libgit2.tar.gz
+curl -L https://github.com/libgit2/libgit2/archive/refs/tags/v1.3.0.tar.gz --output libgit2.tar.gz
 tar -xzf libgit2.tar.gz
-mv libgit2-1.0.1 libgit2
+mv libgit2-1.3.0 libgit2
 rm libgit2.tar.gz
 rm libgit2/src/transports/http.c
 cp -r libgit2patchedfiles/* libgit2/

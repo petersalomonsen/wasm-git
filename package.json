@@ -1,6 +1,6 @@
 {
     "name": "wasm-git",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "author": {
         "name": "Peter Salomonsen",
         "url": "https://petersalomonsen.com"
@@ -16,7 +16,9 @@
     "scripts": {
         "test": "mocha test/**/*.spec.js",
         "test-browser": "karma start --single-run --browsers ChromeHeadless karma.conf.js",
-        "test-browser-async": "karma start --single-run --browsers ChromeHeadless karma.conf-async.js"
+        "test-browser-watch": "karma start --browsers Chrome karma.conf.js",
+        "test-browser-async": "karma start --single-run --browsers ChromeHeadless karma.conf-async.js",
+        "patch-version": "npm --no-git-tag-version version patch"
     },
     "devDependencies": {
         "cgi": "^0.3.1",

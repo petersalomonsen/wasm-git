@@ -2,7 +2,7 @@ const lgPromise = require('./common.js').lgPromise;
 const assert = require('assert');
 const { rmSync } = require('fs');
 
-describe.only('nodefs', function () {
+describe('nodefs', function () {
     this.timeout(20000);
 
     it('should clone using nodefs', async () => {        

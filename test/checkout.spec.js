@@ -1,7 +1,11 @@
 const lgPromise = require('./common.js').lgPromise;
 const assert = require('assert');
 
-describe('git checkout', () => {
+describe('git checkout', () => {    
+    beforeEach(async () => {
+        (await lgPromise).FS.chdir('/working');
+        console.log('cwd', (await lgPromise).FS.cwd());
+    });
     it('should discard changes to a path', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;
@@ -31,8 +35,8 @@ describe('git checkout', () => {
                     'name = Test User\n' +
                     'email = test@example.com');
                 
-        FS.mkdir('test');
-        FS.chdir('test');
+        FS.mkdir('test99');
+        FS.chdir('test99');
         lg.callMain(['init', '.']);
 
         FS.writeFile('test.txt', 'abcdef');

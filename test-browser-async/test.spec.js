@@ -1,4 +1,6 @@
 describe('wasm-git', function() {
+    this.timeout(20000);
+
     it('should have window', () => {
         assert(window !== undefined);
     });
