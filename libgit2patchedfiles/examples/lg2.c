@@ -30,6 +30,7 @@ struct {
 	{ "merge",        lg2_merge,        1 },
 	{ "push",         lg2_push,        1  },
 	{ "remote",       lg2_remote,       1 },
+	{ "reset",        lg2_reset,       1 },
 	{ "rev-list",     lg2_rev_list,     1 },
 	{ "rev-parse",    lg2_rev_parse,    1 },
 	{ "show-index",   lg2_show_index,   0 },

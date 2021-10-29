@@ -33,7 +33,12 @@
 int lg2_push(git_repository *repo, int argc, char **argv) {
 	git_push_options options;
 	git_remote* remote = NULL;
-	char *refspec = "refs/heads/master";
+	char *refspec = NULL;
+	git_reference* head_ref;
+	
+	git_reference_lookup(&head_ref, repo, "HEAD");
+	refspec = git_reference_symbolic_target(head_ref);
+
 	const git_strarray refspecs = {
 		&refspec,
 		1
@@ -52,5 +57,6 @@ int lg2_push(git_repository *repo, int argc, char **argv) {
 	check_lg2(git_remote_push(remote, &refspecs, &options), "Error pushing", NULL);
 
 	printf("pushed\n");
+	git_reference_free(head_ref);
 	return 0;
 }
