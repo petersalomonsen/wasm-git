@@ -67,6 +67,12 @@ Module.onRuntimeInitialized = () => {
       postMessage({ deleted: currentRepoRootDir });
     } else if (msg.data.command === 'dir') {
       postMessage({ dircontents: FS.readdir('.') });
+    } else if (msg.data.command === 'mkdir') {
+      FS.mkdir(msg.data.dir);
+      FS.syncfs(false, () => {
+        console.log(msg.data.dir, 'stored to indexeddb');
+        postMessage({});
+      });
     } else if (msg.data.command === 'clone') {
       currentRepoRootDir = msg.data.url.substring(msg.data.url.lastIndexOf('/') + 1);
 

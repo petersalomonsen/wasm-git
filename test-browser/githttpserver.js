@@ -11,8 +11,25 @@ function startServer() {
     const { tmpdir } = require('os');
     const { execSync } = require('child_process');
 
-    fs.rmdirSync(`${tmpdir()}/testrepo.git`, {recursive: true, force: true});
+    try {
+    fs.rmdirSync(`${tmpdir()}/testrepo.git`, { recursive: true, force: true });
+    fs.rmdirSync(`${tmpdir()}/test-clone`, { recursive: true, force: true });
+    } catch (e) {}
+
     execSync(`git init --bare ${tmpdir()}/testrepo.git`);
+    const cwd = `${tmpdir()}/test-clone`;
+
+    execSync(`git clone ${tmpdir()}/testrepo.git ${cwd}`);
+    fs.writeFileSync(`${cwd}/README.md`, 'Any content');
+    execSync(`git add .`, { cwd });
+    execSync(`git commit -m "add README"`, { cwd });
+    execSync(`git push origin master`, { cwd });
+
+    execSync(`git checkout -b test-branch`, { cwd });
+    fs.writeFileSync(`${cwd}/test.txt`, '1');
+    execSync(`git add .`, { cwd });
+    execSync(`git commit -m "add test.txt"`, { cwd });
+    execSync(`git push origin test-branch`, { cwd });
 
     const script = 'git';
 
