@@ -93,7 +93,7 @@ describe('wasm-git-stash-pop', function () {
         worker.terminate();
     });
 
-    it('should create repo pop and stash', async () => {
+    it('should create repo pop and stash, and show conflict', async () => {
         await callWorkerWithArgs('init', '.');
         await callWorker(
             'writefile', {
@@ -123,5 +123,7 @@ describe('wasm-git-stash-pop', function () {
         assert.isTrue((await callWorker('dir')).dircontents.findIndex(f => f==='test2.txt')>-1);
         // This part is different in libgit2 status from cmd line git
         // assert.equal((await callWorker('status')).stdout, 'DU test2.txt');
+        console.log((await callWorker('status')).stdout);
+        assert.isTrue((await callWorker('status')).stdout.indexOf('conflict: a:test2.txt o:NULL t:test2.txt') >0 );
     });
 });

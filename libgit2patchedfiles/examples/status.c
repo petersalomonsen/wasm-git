@@ -61,6 +61,7 @@ struct status_opts
 static void parse_opts(struct status_opts *o, int argc, char *argv[]);
 static void show_branch(git_repository *repo, int format);
 static void show_ahead_behind(git_repository *repo);
+static void print_conflicts(git_repository *repo);
 static void print_long(git_status_list *status);
 static void print_short(git_repository *repo, git_status_list *status);
 static int print_submod(git_submodule *sm, const char *name, void *payload);
@@ -117,6 +118,8 @@ show_status:
         print_long(status);
     else
         print_short(repo, status);
+
+	print_conflicts(repo);
 
     git_status_list_free(status);
 
@@ -191,6 +194,38 @@ static void show_ahead_behind(git_repository *repo)
 cleanup:
     git_reference_free(head_ref);
     git_reference_free(upstream);
+}
+
+/**
+ * Simple printing of conflicts
+ */
+static void print_conflicts(git_repository *repo) {
+	git_index *index = NULL;
+	git_repository_index(&index, repo);
+
+	if(git_index_has_conflicts(index)) {
+		git_index_conflict_iterator *conflicts;
+		const git_index_entry *ancestor = NULL;
+		const git_index_entry *our = NULL;
+		const git_index_entry *their = NULL;
+		int err = 0;
+
+		git_index_conflict_iterator_new(&conflicts, index);
+
+		while ((err = git_index_conflict_next(&ancestor, &our, &their, conflicts)) == 0) {
+			printf("conflict: a:%s o:%s t:%s\n",
+					ancestor!=NULL ? ancestor->path : "NULL",
+					our!=NULL ? our->path : "NULL",
+					their!=NULL ? their->path : "NULL");			
+		}
+
+		if (err != GIT_ITEROVER) {
+			fprintf(stderr, "error iterating conflicts\n");
+		}
+
+		git_index_conflict_iterator_free(conflicts);
+	}	
+	git_index_free(index);
 }
 
 /**
