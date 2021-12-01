@@ -7,12 +7,6 @@ peter@MacBook-Air wgtest % git commit -m "hei"
 [master (root-commit) 6059cdd] hei
  1 file changed, 1 insertion(+)
  create mode 100644 test.txt
-peter@MacBook-Air wgtest % git log
-commit 6059cdda2cb06cc517719936d419d934b64307d3 (HEAD -> master)
-Author: Peter Salomonsen <pjsalomonsen@gmail.com>
-Date:   Tue Nov 23 20:14:50 2021 +0100
-
-    hei
 peter@MacBook-Air wgtest % git checkout -b testbranch
 Switched to a new branch 'testbranch'
 peter@MacBook-Air wgtest % echo "hei" > test2.txt    

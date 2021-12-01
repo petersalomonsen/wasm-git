@@ -2,9 +2,17 @@ const assert = require('assert');
 const lgPromise = require('./common.js').lgPromise;
 
 describe('git fetch', () => {
+    beforeEach(async () => {
+        (await lgPromise).FS.chdir('/working');
+        console.log('cwd', (await lgPromise).FS.cwd());
+    });
     it('should create 1 bare and 2 clones and fetch changes', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;
+        FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
+            'name = Test User\n' +
+            'email = test@example.com');
+
         FS.mkdir('bare');
         FS.chdir('bare');
         lg.callMain(['init', '--bare', '.']);
