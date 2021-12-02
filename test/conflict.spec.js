@@ -9,6 +9,9 @@ describe('conflicts', function() {
     it('should create 1 bare and 2 clones and create/resolve conflicts', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;
+
+        lg.callMain(['config', 'user.name', 'The Tester']);
+        lg.callMain(['config', 'user.email', 'test@testing.com']);
         FS.mkdir('bareconflicts');
         FS.chdir('bareconflicts');
         lg.callMain(['init', '--bare', '.']);

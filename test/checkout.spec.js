@@ -6,7 +6,7 @@ describe('git checkout', () => {
         (await lgPromise).FS.chdir('/working');
         console.log('cwd', (await lgPromise).FS.cwd());
     });
-    it.skip('should discard changes to a path', async () => {
+    it('should discard changes to a path', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;
         FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +

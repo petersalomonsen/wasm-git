@@ -9,10 +9,9 @@ describe('git fetch', () => {
     it('should create 1 bare and 2 clones and fetch changes', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;
-        FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
-            'name = Test User\n' +
-            'email = test@example.com');
-
+        lg.callMain(['config', 'user.name', 'The Tester']);
+        lg.callMain(['config', 'user.email', 'test@testing.com']);
+    
         FS.mkdir('bare');
         FS.chdir('bare');
         lg.callMain(['init', '--bare', '.']);
