@@ -45,5 +45,23 @@ describe('git fetch', () => {
         const result = lg.callWithOutput(['log']);
         assert.ok(result.indexOf('test commit 2') > 0);
         assert.ok(result.indexOf('test commit 1') > result.indexOf('test commit 2') > 0);
+
+        lg.callMain(['checkout', '-b', 'testbranch']);
+        FS.writeFile('testinbranch.txt', 'abcdef');
+        lg.callMain(['add', 'testinbranch.txt']);
+        lg.callMain(['commit', '-m', 'test in branch']);
+        lg.callMain(['push']);
+
+        FS.chdir('..');
+
+        FS.chdir('test2');
+
+        assert.equal(FS.analyzePath('testinbranch.txt').exists, false);
+        lg.callMain(['fetch', 'origin']);
+        lg.callMain(['checkout', 'testbranch']);
+
+        assert.match(lg.callWithOutput(['status']), /On branch testbranch/);
+        assert.equal(FS.analyzePath('testinbranch.txt').exists, true);
+        assert.equal(FS.readFile('testinbranch.txt', {encoding: 'utf8'}), 'abcdef');
     });
 });
