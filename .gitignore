@@ -7,3 +7,5 @@ lg2.wasm
 .vscode
 node_modules
 package
+.idea
+emsdk
