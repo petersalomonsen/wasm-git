@@ -14,7 +14,7 @@ describe('wasm-git', function () {
         });
     }
 
-    const callWorker = async (command, params) => {        
+    const callWorker = async (command, params) => {
         return await new Promise(resolve => {
             worker.onmessage = msg => resolve(msg.data);
             worker.postMessage(Object.assign({
@@ -28,7 +28,7 @@ describe('wasm-git', function () {
             worker.postMessage({
                 command: command,
                 args: args
-            });    
+            });
         });
     };
 
@@ -93,7 +93,7 @@ describe('wasm-git', function () {
         await new Promise(r => setTimeout(r, 1000));
     });
 
-    it('remove the local clone of the repository', async () => {        
+    it('remove the local clone of the repository', async () => {
         assert.equal((await callWorker('deletelocal')).deleted, 'testrepo.git');
         worker.terminate();
     });
@@ -196,7 +196,7 @@ describe('wasm-git', function () {
         worker.terminate();
         await createWorker();
         assert.isTrue((await callWorker('synclocal', {url: `${location.origin}/testrepo.git`, newrepo: true })).empty);
-        
+
         await callWorkerWithArgs('init', '.');
         await callWorker(
             'writefile', {
@@ -207,5 +207,52 @@ describe('wasm-git', function () {
         await callWorkerWithArgs('commit', '-m', 'another test commit');
         assert.equal((await callWorkerWithArgs('checkout', '-b', 'testbranch')).stderr, '');
         assert.equal((await callWorker('status')).stdout.split('\n')[0], '# On branch testbranch');
+    });
+    it('should be able to apply and drop specific stash index', async() => {
+        assert.equal((await callWorker('deletelocal')).deleted, 'testrepo.git');
+        worker.terminate();
+        await createWorker();
+        assert.isTrue((await callWorker('synclocal', {url: `${location.origin}/testrepo.git`, newrepo: true })).empty);
+
+        await callWorkerWithArgs('init', '.');
+        await callWorker(
+            'writefile', {
+                filename: 'test.txt',
+                contents: 'hello world'
+            });
+        await callWorkerWithArgs('add', 'test.txt');
+        await callWorkerWithArgs('commit', '-m', 'initial commit');
+
+        await callWorker(
+            'writefile', {
+                filename: 'test2.txt',
+                contents: 'test2'
+            });
+        await callWorkerWithArgs('add', 'test2.txt');
+        assert.isTrue((await callWorker('dir')).dircontents.includes('test2.txt'));
+        await callWorker('stash');
+        assert.isFalse((await callWorker('dir')).dircontents.includes('test2.txt'));
+
+        await callWorker(
+            'writefile', {
+                filename: 'test3.txt',
+                contents: 'test3'
+            });
+        await callWorkerWithArgs('add', 'test3.txt');
+
+        assert.isTrue((await callWorker('dir')).dircontents.includes('test3.txt'));
+        await callWorker('stash');
+        assert.isFalse((await callWorker('dir')).dircontents.includes('test3.txt'));
+        assert.isTrue((await callWorkerWithArgs('stash', 'list')).stdout.split('\n').length === 2);
+
+        await callWorkerWithArgs('stash', 'apply', '1');
+        await callWorkerWithArgs('stash', 'drop', '1');
+
+        assert.isTrue((await callWorker('dir')).dircontents.includes('test2.txt'));
+        assert.isFalse((await callWorker('dir')).dircontents.includes('test3.txt'));
+
+        const stashListOutput = (await callWorkerWithArgs('stash', 'list')).stdout;
+        assert.isTrue(stashListOutput.split('\n').length === 1);
+        assert.isTrue(stashListOutput.startsWith('stash@{0}:'));
     });
 });
