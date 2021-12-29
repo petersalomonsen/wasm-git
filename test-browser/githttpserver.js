@@ -13,6 +13,8 @@ function startServer() {
 
     fs.rmdirSync(`${tmpdir()}/testrepo.git`, {recursive: true, force: true});
     execSync(`git init --bare ${tmpdir()}/testrepo.git`);
+    fs.rmdirSync(`${tmpdir()}/testremote.git`, {recursive: true, force: true});
+    execSync(`git init --bare ${tmpdir()}/testremote.git`);
 
     const script = 'git';
 
