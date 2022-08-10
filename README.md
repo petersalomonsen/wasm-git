@@ -167,7 +167,7 @@ for using with `NODEFS` you'll also need https://github.com/emscripten-core/emsc
 
 All of these pull requests are merged to emscripten master as of 2020-03-29.
 
-See [.travis.yml](.travis.yml) for a full build and test pipeline including installing emscripten.
+See [.github/workflows/main.yml](./.github/workflows/main.yml) for a full build and test pipeline including installing emscripten.
 
 Run [setup.sh](setup.sh) first to download libgit2 and apply patches.
 
