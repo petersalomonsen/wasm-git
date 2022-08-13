@@ -28,13 +28,19 @@ jobs:
           set -e
           npm run test
           npm run test-browser
-          ./preparepublishnpm.sh  
-          PACKAGEFILE=`npm pack | tail -n 1`
-          tar -xvzf $PACKAGEFILE
-          rm test-browser/lg2.*
-          echo "run browser tests with npm package"
-          cp package/lg2.* test-browser/
-          npm run test-browser
-          npm publish
+          export VERSION=`npm view wasm-git dist-tags.latest`
+          export NEWVERSION=`node -p "require('./package.json').version"`
+          echo $VERSION $NEWVERSION
+          if [ "$VERSION" != "$NEWVERSION" ]
+          then
+            ./preparepublishnpm.sh  
+            PACKAGEFILE=`npm pack | tail -n 1`
+            tar -xvzf $PACKAGEFILE
+            rm test-browser/lg2.*
+            echo "run browser tests with npm package"
+            cp package/lg2.* test-browser/
+            npm run test-browser
+            npm publish
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
