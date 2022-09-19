@@ -17,9 +17,13 @@ importScripts('lg2.js');
 Module.onRuntimeInitialized = () => {
   const lg = Module;
 
-  FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
-    'name = Test User\n' +
-    'email = test@example.com');
+  const username = 'Test User';
+  const useremail = 'test@example.com';
+
+  FS.writeFile('/home/web_user/.gitconfig',
+`[user]
+name = ${username}
+email = ${useremail}`);
 
   let currentRepoRootDir;
 
@@ -30,6 +34,7 @@ Module.onRuntimeInitialized = () => {
       FS.writeFile(msg.data.filename, msg.data.contents);
       lg.callMain(['add', '--verbose', msg.data.filename]);
       lg.callMain(['commit', '-m', `edited ${msg.data.filename}`]);
+      lg.callMain(['log']);
       FS.syncfs(false, () => {
         console.log(currentRepoRootDir, 'stored to indexeddb');
         lg.callMain(['push']);
