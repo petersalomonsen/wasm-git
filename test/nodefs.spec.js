@@ -16,9 +16,14 @@ describe('nodefs', function () {
         FS.mount(NODEFS, { root: '.' }, '/nodefs');
         FS.chdir('/nodefs');
 
-        FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
-            'name = Test User\n' +
-            'email = test@example.com');
+        FS.writeFile('/home/web_user/.gitconfig', `
+[safe]
+directory = nodefsclonetest
+
+[user]
+name = Test User
+email = test@example.com
+`);
 
         // clone a repository from github
         lg.callMain(['clone', 'https://github.com/petersalomonsen/wasm-git.git', clonedir]);

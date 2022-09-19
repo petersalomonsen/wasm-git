@@ -4,3 +4,5 @@ deps
 examples
 libgit2*
 Makefile
+*.cmake
+*.a

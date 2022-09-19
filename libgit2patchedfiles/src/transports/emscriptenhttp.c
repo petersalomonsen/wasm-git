@@ -5,6 +5,8 @@
 #include "git2/transport.h"
 #include "smart.h"
 
+#define DEFAULT_BUFSIZE 65536
+
 static const char *upload_pack_ls_service_url = "/info/refs?service=git-upload-pack";
 static const char *upload_pack_service_url = "/git-upload-pack";
 static const char *receive_pack_ls_service_url = "/info/refs?service=git-receive-pack";
@@ -109,25 +111,25 @@ static int emscriptenhttp_action(
     if (emscriptenhttp_stream_alloc(t, &s) < 0)
 		return -1;
 
-    git_buf buf = GIT_BUF_INIT;
+    git_str buf = GIT_STR_INIT;
     
     switch(action) {
         case GIT_SERVICE_UPLOADPACK_LS:
-            git_buf_printf(&buf, "%s%s", url, upload_pack_ls_service_url);   
+            git_str_printf(&buf, "%s%s", url, upload_pack_ls_service_url);   
 
             break;
         case GIT_SERVICE_UPLOADPACK:
-            git_buf_printf(&buf, "%s%s", url, upload_pack_service_url);
+            git_str_printf(&buf, "%s%s", url, upload_pack_service_url);
             break;
         case GIT_SERVICE_RECEIVEPACK_LS:
-            git_buf_printf(&buf, "%s%s", url, receive_pack_ls_service_url);
+            git_str_printf(&buf, "%s%s", url, receive_pack_ls_service_url);
             break;
         case GIT_SERVICE_RECEIVEPACK:
-            git_buf_printf(&buf, "%s%s", url, receive_pack_service_url);
+            git_str_printf(&buf, "%s%s", url, receive_pack_service_url);
             break;            
     }
 
-    s->service_url = git_buf_cstr(&buf);
+    s->service_url = git_str_cstr(&buf);
     *stream = &s->parent;
 
     return 0;
