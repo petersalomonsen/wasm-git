@@ -7,8 +7,9 @@ tasks:
       npm install
       wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
       sudo apt update
-      sudo apt install cmake
       sudo apt install -y ./google-chrome-stable_current_amd64.deb      
+      sudo apt install -y cmake
+
       rm ./google-chrome-stable_current_amd64.deb
       sh setup.sh
       git clone https://github.com/emscripten-core/emsdk.git
