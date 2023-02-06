@@ -15,7 +15,8 @@ Module.onRuntimeInitialized = () => {
     // int git_repository_init(git_repository **out, const char *path, unsigned int is_bare);
     let git_repository_init = Module.cwrap('git_repository_init', 'number', ['number','string','number'])
 
-    let r1 = git_repository_init(repoPointer, "/working", 0)
+    debugger
+    let r1 = git_repository_init(repoPointer, ".", 0)
     console.log(`r1 ${r1}`);
 
 };
