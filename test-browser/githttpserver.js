@@ -11,9 +11,10 @@ function startServer() {
     const { tmpdir } = require('os');
     const { execSync } = require('child_process');
 
-    fs.rmdirSync(`${tmpdir()}/testrepo.git`, {recursive: true, force: true});
+    const testrepodir = `${tmpdir()}/testrepo.git`;
+    fs.rmSync(testrepodir, {recursive: true, force: true});
     execSync(`git init --initial-branch=master --bare ${tmpdir()}/testrepo.git`);
-    fs.rmdirSync(`${tmpdir()}/testremote.git`, {recursive: true, force: true});
+    fs.rmSync(`${tmpdir()}/testremote.git`, {recursive: true, force: true});
     execSync(`git init --initial-branch=master --bare ${tmpdir()}/testremote.git`);
 
     const script = 'git';
