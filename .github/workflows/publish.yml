@@ -2,16 +2,14 @@ name: Publish
 on:
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]
 jobs:
   default:
     name: "Default"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-          registry-url: 'https://registry.npmjs.org'
       - name: Default
         run: |
           npm install
@@ -31,15 +29,18 @@ jobs:
           export VERSION=`npm view wasm-git dist-tags.latest`
           export NEWVERSION=`node -p "require('./package.json').version"`
           echo $VERSION $NEWVERSION
-          if [ "$VERSION" != "$NEWVERSION" ]
-          then
-            ./preparepublishnpm.sh  
-            PACKAGEFILE=`npm pack | tail -n 1`
-            tar -xvzf $PACKAGEFILE
-            rm test-browser/lg2.*
-            echo "run browser tests with npm package"
-            cp package/lg2.* test-browser/
-            npm run test-browser
+          ./preparepublishnpm.sh  
+          PACKAGEFILE=`npm pack | tail -n 1`
+          tar -xvzf $PACKAGEFILE
+          rm test-browser/lg2.*
+          echo "run browser tests with npm package"
+          cp package/lg2.* test-browser/
+          npm run test-browser
+          BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+          if [[ "$VERSION" = "$NEWVERSION" || "$BRANCH" != "master" ]]; then
+            echo "version change is $VERSION->$NEWVERSION, branch is $BRANCH, not publishing, only dry-run"
+            npm publish --dry-run
+          else
             npm publish
           fi
         env:
