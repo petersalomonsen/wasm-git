@@ -28,8 +28,12 @@ elif [ "$1" == "Debug-async" ]; then
     POST_JS="--post-js $(pwd)/post-async.js"
 fi
 
-# Before building, remove any ../libgit2/src/transports/emscriptenhttp.c left from running setup.sh 
+# Before building, remove any ../libgit2/src/transports/emscriptenhttp.c left from running setup.sh
 [ -f "../libgit2/src/libgit2/transports/emscriptenhttp-async.c" ] && rm ../libgit2/src/libgit2/transports/emscriptenhttp-async.c
 
-emcmake cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_FLAGS="$EXTRA_CMAKE_C_FLAGS  --pre-js $(pwd)/pre.js $POST_JS -s \"EXTRA_EXPORTED_RUNTIME_METHODS=['FS','callMain']\" -lnodefs.js -lidbfs.js -s INVOKE_RUN=0 -s ALLOW_MEMORY_GROWTH=1 -s STACK_SIZE=131072" -DREGEX_BACKEND=regcomp -DSONAME=OFF -DUSE_HTTPS=OFF -DBUILD_SHARED_LIBS=OFF -DTHREADSAFE=OFF -DUSE_SSH=OFF -DBUILD_CLAR=OFF -DBUILD_EXAMPLES=ON ../libgit2
+# To enable debugging & disable extra optimizations/inlines: -g -sINLINING_LIMIT -O0
+# also Chrome extenion and devtools option
+# see https://developer.chrome.com/blog/wasm-debugging-2020/
+emcmake cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_FLAGS="$EXTRA_CMAKE_C_FLAGS \
+ -g -sINLINING_LIMIT -O0 --pre-js $(pwd)/pre.js $POST_JS -sEXPORTED_FUNCTIONS=['_my_sqrt','_main','_malloc','_git_repository_open_ext','_git_repository_init','_git_libgit2_init'] -s \"EXTRA_EXPORTED_RUNTIME_METHODS=['FS','callMain','ccall','cwrap']\" -lnodefs.js -lidbfs.js -s INVOKE_RUN=0 -s ALLOW_MEMORY_GROWTH=1 -s TOTAL_MEMORY=512MB -s STACK_SIZE=131072" -DREGEX_BACKEND=regcomp -DSONAME=OFF -DUSE_HTTPS=OFF -DBUILD_SHARED_LIBS=OFF -DTHREADSAFE=OFF -DUSE_SSH=OFF -DBUILD_CLAR=OFF -DBUILD_EXAMPLES=ON ../libgit2
 emmake make lg2
