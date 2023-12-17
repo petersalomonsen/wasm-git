@@ -13,4 +13,4 @@ SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_AR "llvm-ar" CACHE FILEPATH "llvm-ar")
 set(CMAKE_RANLIB "llvm-ranlib" CACHE FILEPATH "llvm-ranlib")
 
-set(CMAKE_EXE_LINKER_FLAGS "-lwasi-emulated-mman ${CMAKE_EXE_LINKER_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "-lwasi-emulated-mman ${CMAKE_CURRENT_LIST_DIR}/wasi_mocks/pwd.o ${CMAKE_CURRENT_LIST_DIR}/wasi_mocks/posix_mocks.o ${CMAKE_EXE_LINKER_FLAGS}")
