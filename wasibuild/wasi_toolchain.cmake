@@ -1,7 +1,7 @@
 SET(CMAKE_C_COMPILER   clang)
 SET(CMAKE_FIND_ROOT_PATH ${CMAKE_CURRENT_LIST_DIR}/wasi-sdk-20.0/share/wasi-sysroot/)
 SET(CMAKE_SYSROOT ${CMAKE_CURRENT_LIST_DIR}/wasi-sdk-20.0/share/wasi-sysroot/)
-set(CMAKE_C_FLAGS "--target=wasm32-wasi -D_WASI_EMULATED_MMAN -lwasi-emulated-mman ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "--target=wasm32-wasi -I${CMAKE_CURRENT_LIST_DIR}/wasi_mocks -D_WASI_EMULATED_MMAN -lwasi-emulated-mman ${CMAKE_C_FLAGS}")
 
 set(CMAKE_C_STANDARD_INCLUDE_DIRECTORIES "${CMAKE_SYSROOT}/include")
 
