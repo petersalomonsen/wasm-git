@@ -9,3 +9,5 @@ Makefile
 *.a
 tests
 wasi-sdk*
+!wasi_toolchain.cmake
+CopyOfCMakeCache.txt
