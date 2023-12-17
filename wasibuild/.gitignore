@@ -1,0 +1,11 @@
+CMake*
+src
+deps
+examples
+libgit2*
+include
+Makefile
+*.cmake
+*.a
+tests
+wasi-sdk*
