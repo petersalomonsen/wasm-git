@@ -1,11 +1,9 @@
-const lgPromise = require('./common.js').lgPromise;
-const assert = require('assert');
+import { lgPromise } from './common.js';
 
 describe.only('hello wasmfs', () => {    
     it.only('hello wasmfs', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;
-
 
         FS.mkdir('/test');
         FS.chdir('/test');

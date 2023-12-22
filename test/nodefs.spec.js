@@ -1,6 +1,6 @@
-const lgPromise = require('./common.js').lgPromise;
-const assert = require('assert');
-const { rmSync } = require('fs');
+import { lgPromise } from './common.js';
+import assert from 'assert';
+import {rmSync} from 'fs';
 
 describe('nodefs', function () {
     this.timeout(20000);

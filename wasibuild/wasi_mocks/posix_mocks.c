@@ -26,7 +26,7 @@ pid_t getsid(pid_t pid) {
 }
 
 uid_t getuid(void) {
-    return 1000; // Mock UID
+    return 0; // Mock UID
 }
 
 gid_t getgid(void) {
@@ -38,7 +38,7 @@ int chmod(const char *pathname, mode_t mode) {
 }
 
 uid_t geteuid(void) {
-    return 1000; // Mock effective UID
+    return 0; // Mock effective UID
 }
 
 struct passwd *getpwuid(uid_t uid) {
@@ -66,12 +66,12 @@ int getpwuid_r(uid_t uid, struct passwd *pwd, char *buf, size_t buflen, struct p
     }
 
     // You can fill in the `pwd` structure with mock data as needed
-    pwd->pw_name = "mockuser";
+    pwd->pw_name = "codespace";
     pwd->pw_passwd = "mockpassword";
     pwd->pw_uid = uid;
-    pwd->pw_gid = 1000; // Mock GID
+    pwd->pw_gid = 0; // Mock GID
     pwd->pw_gecos = "Mock User";
-    pwd->pw_dir = "/home/mockuser";
+    pwd->pw_dir = "/home/codespace";
     pwd->pw_shell = "/bin/sh";
 
     // Copy the structure to the provided buffer

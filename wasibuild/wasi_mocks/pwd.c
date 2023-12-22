@@ -17,12 +17,12 @@ struct passwd *getpwnam(const char *name) {
     static struct passwd mock_user;
 
     // Hardcoded user information
-    mock_user.pw_name = "mockuser";
+    mock_user.pw_name = "codespace";
     mock_user.pw_passwd = "mockpassword";
-    mock_user.pw_uid = 1000;
-    mock_user.pw_gid = 1000;
+    mock_user.pw_uid = 0;
+    mock_user.pw_gid = 0;
     mock_user.pw_gecos = "Mock User";
-    mock_user.pw_dir = "/home/mockuser";
+    mock_user.pw_dir = "/home/codespace";
     mock_user.pw_shell = "/bin/sh";
 
     return &mock_user;
