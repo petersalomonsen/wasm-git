@@ -1,5 +1,5 @@
-const lgPromise = require('./common.js').lgPromise;
-const assert = require('assert');
+import { lgPromise } from './common.js';
+import assert from 'assert';
 
 describe('git checkout', () => {    
     beforeEach(async () => {

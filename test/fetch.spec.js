@@ -1,5 +1,5 @@
-const assert = require('assert');
-const lgPromise = require('./common.js').lgPromise;
+import { lgPromise } from './common.js';
+import assert from 'assert';
 
 describe('git fetch', () => {
     beforeEach(async () => {

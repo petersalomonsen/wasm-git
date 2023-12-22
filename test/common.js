@@ -1,10 +1,1 @@
-module.exports = {
-    lgPromise: new Promise(resolve => {
-        const lg = require('./lg2.js');
-        lg.onRuntimeInitialized = () => {
-            const FS = lg.FS;
-            
-            resolve(lg);
-        };
-    })
-}
+export const lgPromise = await import('./lg2.js').then(r => r.default());
