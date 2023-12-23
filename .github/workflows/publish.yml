@@ -26,20 +26,23 @@ jobs:
           source ./emsdk/emsdk_env.sh
           cd emscriptenbuild
           ./build.sh Release
+          ./build.sh Release-async
           cd ..
           set -e
           npm run test
-          npm run test-browser
           export VERSION=`npm view wasm-git dist-tags.latest`
           export NEWVERSION=`node -p "require('./package.json').version"`
           echo $VERSION $NEWVERSION
           ./preparepublishnpm.sh  
           PACKAGEFILE=`npm pack | tail -n 1`
           tar -xvzf $PACKAGEFILE
-          rm test-browser/lg2.*
           echo "run browser tests with npm package"
-          cp package/lg2.* test-browser/
+          rm test-browser/lg2.*
+          cp package/lg2.* test-browser/          
           npm run test-browser
+          rm test-browser-async/lg2_async.*
+          cp package/lg2_async.* test-browser-async/
+          npm run test-browser-async
           BRANCH="$(git rev-parse --abbrev-ref HEAD)"
           if [[ "$VERSION" = "$NEWVERSION" || "$BRANCH" != "master" ]]; then
             echo "version change is $VERSION->$NEWVERSION, branch is $BRANCH, not publishing, only dry-run"

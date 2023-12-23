@@ -1,1 +1,1 @@
-../emscriptenbuild/examples/lg2.js
+../emscriptenbuild/libgit2/examples/lg2.js

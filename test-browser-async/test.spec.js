@@ -14,7 +14,7 @@ describe('wasm-git', function() {
             window.lg2Ready = true;
             done();
         }
-        scriptElement.src = 'base/lg2.js';
+        scriptElement.src = 'base/lg2_async.js';
         document.documentElement.appendChild(scriptElement);
     });
 

@@ -16,7 +16,7 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      {pattern: 'lg2.*', included: false},
+      {pattern: 'lg2_async.*', included: false},
     //   {pattern: 'async-test.js', included: false},
       {pattern: '**/*.spec.js'}
     ],
