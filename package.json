@@ -1,6 +1,6 @@
 {
     "name": "wasm-git",
-    "version": "0.0.11",
+    "version": "0.0.12",
     "author": {
         "name": "Peter Salomonsen",
         "url": "https://petersalomonsen.com"
@@ -11,6 +11,8 @@
     "files": [
         "lg2.js",
         "lg2.wasm",
+        "lg2_async.js",
+        "lg2_async.wasm",
         "README.md"
     ],
     "scripts": {
@@ -22,8 +24,8 @@
     },
     "devDependencies": {
         "cgi": "^0.3.1",
-        "chai": "^4.3.7",
-        "karma": "^6.4.1",
+        "chai": "^4.3.10",
+        "karma": "^6.4.2",
         "karma-chai": "^0.1.0",
         "karma-chrome-launcher": "^3.2.0",
         "karma-mocha": "^2.0.1",
