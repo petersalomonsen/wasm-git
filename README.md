@@ -151,7 +151,7 @@ lg.onRuntimeInitialized = () => {
     
     // clone a repository from github
     lg.callMain(['clone','https://github.com/torch2424/made-with-webassembly.git', 'made-with-webassembly']);
-    FS.readdir('made-with-webassembly');
+    console.log(FS.readdir('made-with-webassembly'));
 }
 ```
 
