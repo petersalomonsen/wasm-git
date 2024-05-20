@@ -1,12 +1,12 @@
 let stdout = [];
 let stderr = [];
 
-var Module = {
-  'print': function (text) {
+globalThis.wasmGitModuleOverrides = {
+  'print': (text) => {
     console.log(text);
     stdout.push(text)
   },
-  'printErr': function (text) {
+  'printErr': (text) => {
     console.error(text);
     stderr.push(text);
   }

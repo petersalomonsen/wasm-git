@@ -44,6 +44,9 @@ describe('remotes', function () {
 
     it('should be possible to create a new repo locally, set remotes and push', async () => {
         await callWorkerWithArgs('init', '.');
+        await callWorkerWithArgs('config', 'user.name', 'Test');
+        await callWorkerWithArgs('config', 'user.email', 'test@example.com');
+
         await callWorker(
             'writefile', {
                 filename: 'test.txt',
