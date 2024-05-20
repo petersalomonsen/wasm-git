@@ -18,18 +18,16 @@
     ],
     "scripts": {
         "test": "mocha test/**/*.spec.js",
-        "test-browser": "karma start --single-run --browsers ChromeHeadless karma.conf.js",
-        "test-browser-watch": "karma start --browsers Chrome karma.conf.js",
-        "test-browser-async": "karma start --single-run --browsers ChromeHeadless karma.conf-async.js",
+        "test-browser": "wtr test-browser",
+        "test-browser-watch": "wtr test-browser --watch",
+        "test-browser-async": "wtr test-browser-async",
         "patch-version": "npm --no-git-tag-version version patch"
     },
     "devDependencies": {
+        "@web/test-runner": "^0.18.2",
+        "@web/test-runner-playwright": "^0.11.0",
         "cgi": "^0.3.1",
-        "chai": "^4.3.10",
-        "karma": "^6.4.2",
-        "karma-chai": "^0.1.0",
-        "karma-chrome-launcher": "^3.2.0",
-        "karma-mocha": "^2.0.1",
+        "chai": "^4.3.7",
         "mocha": "^10.2.0"
     }
 }

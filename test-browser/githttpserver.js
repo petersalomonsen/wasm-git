@@ -46,6 +46,6 @@ function startServer() {
     }).listen(8080);
 }
 
-module.exports = {
+export default {
     startServer: startServer
 }
