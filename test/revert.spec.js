@@ -5,6 +5,11 @@ describe('git revert', () => {
     it('should revert commit', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;
+        FS.mkdir('/memfs');
+        FS.mount(lg.MEMFS, { root: '.' }, '/memfs');
+        FS.chdir('/memfs');
+
+
         FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
             'name = Test User\n' +
             'email = test@example.com');

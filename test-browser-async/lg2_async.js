@@ -1,1 +1,1 @@
-../emscriptenbuild/libgit2/examples/lg2_async.js
+../emscriptenbuild/examples/lg2_async.js
