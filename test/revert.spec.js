@@ -2,10 +2,6 @@ import { lgPromise } from './common.js';
 import assert from 'assert';
 
 describe('git revert', () => {
-    beforeEach(async () => {
-        (await lgPromise).FS.chdir('/working');
-        console.log('cwd', (await lgPromise).FS.cwd());
-    });
     it('should revert commit', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;

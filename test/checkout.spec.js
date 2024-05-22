@@ -3,8 +3,9 @@ import assert from 'assert';
 
 describe('git checkout', () => {    
     beforeEach(async () => {
-        (await lgPromise).FS.chdir('/working');
-        console.log('cwd', (await lgPromise).FS.cwd());
+        const lg = await lgPromise;
+        const FS = lg.FS;
+        console.log('cwd', FS.cwd());
     });
     it('should discard changes to a path', async () => {
         const lg = await lgPromise;
