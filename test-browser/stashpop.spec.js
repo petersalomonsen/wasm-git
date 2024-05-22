@@ -49,7 +49,7 @@ describe('wasm-git-stash-pop', function () {
     let worker;
 
     const createWorker = async () => {
-        worker = new Worker('base/worker.js');
+        worker = new Worker(new URL('worker.js', import.meta.url), {type: 'module'});
         await new Promise(resolve => {
             worker.onmessage = msg => {
                 if (msg.data.ready) {
