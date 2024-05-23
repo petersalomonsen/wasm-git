@@ -17,6 +17,8 @@ jobs:
       - name: Default
         run: |
           npm install
+          npx playwright install-deps
+          npx playwright install
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
