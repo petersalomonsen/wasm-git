@@ -1,20 +1,16 @@
 let stdout = [];
 let stderr = [];
 
-/*var Module = {
-    'print': function (text) {
+globalThis.wasmGitModuleOverrides = {
+    'print': (text) => {
         console.log(text);
         stdout.push(text)
     },
-    'printErr': function (text) {
+    'printErr': (text) => {
         console.error(text);
         stderr.push(text);
-    },
-    locateFile: function (s) {
-        return 'SCRIPTURLBASE/test-browser/' + s;
     }
-};*/
-
+};
 
 const lg2mod = await import(new URL('lg2.js', import.meta.url));
 const lg2 = await lg2mod.default();

@@ -3,6 +3,8 @@ libgit2-*
 wasm-git-*.tgz
 lg2.js
 lg2.wasm
+lg2_async.js
+lg2_async.wasm
 .DS_Store
 .vscode
 node_modules
