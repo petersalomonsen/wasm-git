@@ -4,7 +4,7 @@ describe('remotes', function () {
     let worker;
 
     const createWorker = async () => {
-        worker = new Worker('base/worker.js');
+        worker = new Worker(new URL('worker.js', import.meta.url), {type: 'module'});
         await new Promise(resolve => {
             worker.onmessage = msg => {
                 if (msg.data.ready) {
@@ -44,6 +44,9 @@ describe('remotes', function () {
 
     it('should be possible to create a new repo locally, set remotes and push', async () => {
         await callWorkerWithArgs('init', '.');
+        await callWorkerWithArgs('config', 'user.name', 'Test');
+        await callWorkerWithArgs('config', 'user.email', 'test@example.com');
+
         await callWorker(
             'writefile', {
                 filename: 'test.txt',

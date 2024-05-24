@@ -1,16 +1,16 @@
+import http from 'http';
+import fs from 'fs';
+import cgi from 'cgi';
+import { tmpdir } from 'os';
+import { execSync } from 'child_process';
+
+
 /**
  * This example will create a git http server to repositories on your local disk.
  * Set the GIT_PROJECT_ROOT environment variable to point to location of your git repositories.
  */
 
-function startServer() {
-    const http = require('http');
-    const fs = require('fs');
-    const cgi = require('cgi');
-
-    const { tmpdir } = require('os');
-    const { execSync } = require('child_process');
-
+export function startServer() {
     const testrepodir = `${tmpdir()}/testrepo.git`;
     fs.rmSync(testrepodir, {recursive: true, force: true});
     execSync(`git init --initial-branch=master --bare ${tmpdir()}/testrepo.git`);
@@ -46,6 +46,6 @@ function startServer() {
     }).listen(8080);
 }
 
-module.exports = {
+export default {
     startServer: startServer
 }

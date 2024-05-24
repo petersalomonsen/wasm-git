@@ -5,24 +5,11 @@ describe('wasm-git', function() {
         assert(window !== undefined);
     });
 
-    before((done) => {
-        window.lg2Ready = false;
-        const scriptElement = document.createElement('script');
-        window.Module = {};
-        window.Module.onRuntimeInitialized = () => {
-            window.lg2 = window.Module;
-            window.lg2Ready = true;
-            done();
-        }
-        scriptElement.src = 'base/lg2_async.js';
-        document.documentElement.appendChild(scriptElement);
-    });
-
     let lg, FS;
-    it('should have an initialised window.lg2 object', () => {
-        lg = window.lg2;
+    before(async () => {
+        const lgMod = await import(new URL('lg2_async.js', import.meta.url));
+        lg = await lgMod.default();
         FS = lg.FS;
-        assert(typeof(window.lg2) === 'object' );
     });
 
     let APPFS;
@@ -87,13 +74,13 @@ describe('wasm-git', function() {
     it('rename the local clone of the repository', async () => {
         FS.chdir(workingDir);
         FS.rename(currentRepoRootDir, 'junk');
-        dircontents = FS.readdir('.');
+        const dircontents = FS.readdir('.');
         assert(dircontents.find(entry => entry !== currentRepoRootDir));
         console.log(`renamed ${currentRepoRootDir}`);
     });
 
     it('should clone the repository with contents', async () => {
-        dircontents = FS.readdir('.');
+        let dircontents = FS.readdir('.');
         assert(dircontents.find(entry => entry !== testFile));
 
         await lg.callMain(['clone', url, currentRepoRootDir]);

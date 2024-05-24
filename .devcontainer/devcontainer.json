@@ -1,0 +1,12 @@
+{
+    "postCreateCommand": "/workspaces/wasm-git/.devcontainer/post-create.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dtsvet.vscode-wasm",
+                "ms-vscode.cpptools-extension-pack",
+                "github.vscode-github-actions"
+            ]
+        }
+    }
+}

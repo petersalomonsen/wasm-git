@@ -1,3 +1,4 @@
+Object.assign(Module, globalThis.wasmGitModuleOverrides);
 
 if (!Module.print && !Module.printErr) {
     let capturedOutput = null;

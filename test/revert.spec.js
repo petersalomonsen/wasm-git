@@ -1,14 +1,15 @@
-const lgPromise = require('./common.js').lgPromise;
-const assert = require('assert');
+import { lgPromise } from './common.js';
+import assert from 'assert';
 
 describe('git revert', () => {
-    beforeEach(async () => {
-        (await lgPromise).FS.chdir('/working');
-        console.log('cwd', (await lgPromise).FS.cwd());
-    });
     it('should revert commit', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;
+        FS.mkdir('/memfs');
+        FS.mount(lg.MEMFS, { root: '.' }, '/memfs');
+        FS.chdir('/memfs');
+
+
         FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
             'name = Test User\n' +
             'email = test@example.com');

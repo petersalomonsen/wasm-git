@@ -1,25 +1,29 @@
-const lgPromise = require('./common.js').lgPromise;
-const assert = require('assert');
+import { lgPromise } from './common.js';
+import assert from 'assert';
 
 describe('conflicts', function() {
     beforeEach(async () => {
-        (await lgPromise).FS.chdir('/working');
         console.log('cwd', (await lgPromise).FS.cwd());
     });
     it('should create 1 bare and 2 clones and create/resolve conflicts', async () => {
         const lg = await lgPromise;
         const FS = lg.FS;
 
-        lg.callMain(['config', 'user.name', 'The Tester']);
-        lg.callMain(['config', 'user.email', 'test@testing.com']);
         FS.mkdir('bareconflicts');
         FS.chdir('bareconflicts');
         lg.callMain(['init', '--bare', '.']);
+
+        lg.callMain(['config', 'user.name', 'The Tester']);
+        lg.callMain(['config', 'user.email', 'test@testing.com']);
 
         FS.chdir('..');
         lg.callMain(['clone', 'bareconflicts', 'testconflicts1']);        
 
         FS.chdir('testconflicts1');
+
+        lg.callMain(['config', 'user.name', 'The Tester']);
+        lg.callMain(['config', 'user.email', 'test@testing.com']);
+
         FS.writeFile('test.txt', 'abcdef');
         lg.callMain(['add', 'test.txt']);
         lg.callMain(['commit', '-m', 'test commit 1']);
@@ -35,7 +39,11 @@ describe('conflicts', function() {
         lg.callMain(['push']);
         FS.chdir('..');
 
-        FS.chdir('testconflicts2');                
+        FS.chdir('testconflicts2');           
+        
+        lg.callMain(['config', 'user.name', 'The Tester']);
+        lg.callMain(['config', 'user.email', 'test@testing.com']);
+
         FS.writeFile('test.txt', 'hijklmn');
         lg.callMain(['add', 'test.txt']);
         lg.callMain(['commit', '-m', 'test commit 3']);
