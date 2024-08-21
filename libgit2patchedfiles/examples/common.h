@@ -56,6 +56,7 @@
 
 extern int lg2_add(git_repository *repo, int argc, char **argv);
 extern int lg2_blame(git_repository *repo, int argc, char **argv);
+extern int lg2_branch(git_repository *repo, int argc, char **argv);
 extern int lg2_cat_file(git_repository *repo, int argc, char **argv);
 extern int lg2_checkout(git_repository *repo, int argc, char **argv);
 extern int lg2_clone(git_repository *repo, int argc, char **argv);
@@ -69,10 +70,12 @@ extern int lg2_general(git_repository *repo, int argc, char **argv);
 extern int lg2_index_pack(git_repository *repo, int argc, char **argv);
 extern int lg2_init(git_repository *repo, int argc, char **argv);
 extern int lg2_log(git_repository *repo, int argc, char **argv);
+extern int lg2_log_last_commit_of_branch(git_repository *repo, int argc, char **argv);
 extern int lg2_ls_files(git_repository *repo, int argc, char **argv);
 extern int lg2_ls_remote(git_repository *repo, int argc, char **argv);
 extern int lg2_merge(git_repository *repo, int argc, char **argv);
 extern int lg2_push(git_repository *repo, int argc, char **argv);
+extern int lg2_rebase(git_repository *repo, int argc, char **argv);
 extern int lg2_remote(git_repository *repo, int argc, char **argv);
 extern int lg2_reset(git_repository *repo, int argc, char **argv);
 extern int lg2_revert(git_repository *repo, int argc, char **argv);

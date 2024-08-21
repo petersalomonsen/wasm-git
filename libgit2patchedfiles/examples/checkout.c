@@ -341,8 +341,6 @@ int lg2_checkout(git_repository *repo, int argc, char **argv)
 
 			err = git_branch_set_upstream(branch_ref,upstreamname);
 			if (err == GIT_ENOTFOUND) {
-				// no upstream exists
-				git_error_clear();
 				err = 0;
 			}
 			if (err != 0) {

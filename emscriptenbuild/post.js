@@ -12,6 +12,8 @@
 const emscriptenhttpconnections = {};
 let httpConnectionNo = 0;
 
+var writeArrayToMemory=(array,buffer)=>{HEAP8.set(array,buffer)};
+
 if(ENVIRONMENT_IS_WORKER) {
     Object.assign(Module, {
         emscriptenhttpconnect: function(url, buffersize, method, headers) {
