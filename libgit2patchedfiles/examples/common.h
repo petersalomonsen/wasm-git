@@ -71,6 +71,7 @@ extern int lg2_index_pack(git_repository *repo, int argc, char **argv);
 extern int lg2_init(git_repository *repo, int argc, char **argv);
 extern int lg2_log(git_repository *repo, int argc, char **argv);
 extern int lg2_log_last_commit_of_branch(git_repository *repo, int argc, char **argv);
+extern int lg2_log_git_merge_base(git_repository *repo, int argc, char **argv);
 extern int lg2_ls_files(git_repository *repo, int argc, char **argv);
 extern int lg2_ls_remote(git_repository *repo, int argc, char **argv);
 extern int lg2_merge(git_repository *repo, int argc, char **argv);

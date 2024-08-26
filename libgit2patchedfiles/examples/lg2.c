@@ -27,6 +27,7 @@ struct {
 	{ "init",         lg2_init,         0 },
 	{ "log",          lg2_log,          1 },
 	{ "log-last-commit-of-branch", lg2_log_last_commit_of_branch, 1 },
+	{ "log-git-merge-base", lg2_log_git_merge_base, 1 },
 	{ "ls-files",     lg2_ls_files,     1 },
 	{ "ls-remote",    lg2_ls_remote,    1 },
 	{ "merge",        lg2_merge,        1 },
