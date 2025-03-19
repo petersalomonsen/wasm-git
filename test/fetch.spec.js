@@ -45,7 +45,7 @@ describe('git fetch', () => {
         FS.chdir('test1');
         
         lg.callMain(['fetch', 'origin']);
-        lg.callMain(['merge', 'origin/master']);
+        lg.callMain(['merge', 'origin/main']);
         
         const result = lg.callWithOutput(['log']);
         assert.ok(result.indexOf('test commit 2') > 0);

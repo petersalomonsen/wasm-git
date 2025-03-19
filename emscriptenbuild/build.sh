@@ -32,8 +32,17 @@ elif [ "$1" == "Debug-async" ]; then
     export LG2_OUTPUT_NAME=lg2_async
 fi
 
+# Check if output should be bundled in a single js file
+for param in "$@"; do  
+  # Check if the parameter is 'abc'
+  if [ "$param" == "SINGLE_FILE" ]; then
+    EXTRA_CMAKE_C_FLAGS="${EXTRA_CMAKE_C_FLAGS} -s SINGLE_FILE"
+    break
+  fi
+done
+
 # Before building, remove any ../libgit2/src/ transports/emscriptenhttp.c left from running setup.sh 
 [ -f "../libgit2/src/libgit2/transports/emscriptenhttp-async.c" ] && rm ../libgit2/src/libgit2/transports/emscriptenhttp-async.c
 
-emcmake cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_FLAGS="$EXTRA_CMAKE_C_FLAGS --pre-js $(pwd)/pre.js $POST_JS -s \"EXPORTED_RUNTIME_METHODS=['FS','MEMFS','IDBFS','NODEFS','callMain']\" -sFORCE_FILESYSTEM -sEXPORT_ES6 -s INVOKE_RUN=0 -s ALLOW_MEMORY_GROWTH=1 -s STACK_SIZE=131072 -lidbfs.js -lnodefs.js" -DREGEX_BACKEND=regcomp -DSONAME=OFF -DUSE_HTTPS=OFF -DBUILD_SHARED_LIBS=OFF -DTHREADSAFE=OFF -DUSE_SSH=OFF -DBUILD_CLAR=OFF -DBUILD_EXAMPLES=ON ..
+emcmake cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_FLAGS="$EXTRA_CMAKE_C_FLAGS --pre-js $(pwd)/pre.js $POST_JS -s \"EXPORTED_RUNTIME_METHODS=['FS','MEMFS','IDBFS','NODEFS','callMain']\" -sFORCE_FILESYSTEM -sEXPORT_ES6 -sINVOKE_RUN=0 -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=5MB -lidbfs.js -lnodefs.js -flto" -DREGEX_BACKEND=regcomp -DSONAME=OFF -DUSE_HTTPS=OFF -DBUILD_SHARED_LIBS=OFF -DTHREADSAFE=OFF -DUSE_SSH=OFF -DBUILD_CLAR=OFF -DBUILD_EXAMPLES=ON ..
 emmake make lg2

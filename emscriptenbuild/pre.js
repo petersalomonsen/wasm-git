@@ -1,5 +1,17 @@
 Object.assign(Module, globalThis.wasmGitModuleOverrides);
 
+// Add HTTP Basic auth headers
+if (Module.username || Module.accessToken) {
+    XMLHttpRequest.prototype._open = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+        this._open(method, url, async, user, password);
+        if (Module.accessToken) {
+            const username = Module.username || '';
+            this.setRequestHeader('Authorization', `Basic ${btoa(username + ':' + Module.accessToken)}`);
+        }
+    };
+}
+
 if (!Module.print && !Module.printErr) {
     let capturedOutput = null;
     let capturedError = null;

@@ -56,3 +56,28 @@ for using with `NODEFS` you'll also need https://github.com/emscripten-core/emsc
 
 All of these pull requests are merged to emscripten master as of 2020-03-29.
 
+See [.github/workflows/main.yml](./.github/workflows/main.yml) for a full build and test pipeline including installing emscripten.
+
+Run [setup.sh](setup.sh) first to download libgit2 and apply patches.
+
+Given you have installed and activated emscripten, you can use the script in [emscriptenbuild/build.sh](emscriptenbuild/build.sh) to configure and build, and you'll find the resulting `lg2.js` / `lg2.wasm` under the generated `emscriptenbuild/examples` folder.
+
+An example of interacting with libgit2 from nodejs can be found in [examples/example_node.js](examples/example_node.js).
+
+An example for the browser (using webworkers) can be found in [examples/example_webworker.js](examples/example_webworker.js). You can start a webserver for this by running the [examples/webserverwithgithubproxy.js](examples/webserverwithgithubproxy.js) script, which will launch a http server at http://localhost:5000 with a proxy to github. Proxy instead of direct calls is needed because of CORS restrictions in a browser environment.
+
+## Docker build
+
+Build image in repository directory:
+
+```bash
+docker build -t wasm-git-image .
+```
+
+Example Release build and SINGLE_FILE parameter:
+
+```bash
+docker run -v .:/src/wasm-git --rm wasm-git-image /bin/bash -c "cd /src/wasm-git && git ls-files | xargs dos2unix && /src/wasm-git/docker_cleanup_and_build.sh Release SINGLE_FILE"
+```
+
+After build outputs can be found in emscriptenbuild/libgit2/examples/lg2.js and and in case no SINGLE_FILE parameter was provided also emscriptenbuild/libgit2/examples/lg2.wasm.
