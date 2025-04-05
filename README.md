@@ -32,7 +32,7 @@ Examples of using Wasm-git can be found in the tests:
 
 - [test](./test/) for NodeJS
 - [test-browser](./test-browser/) for the sync version in the browser with a web worker
-- [test-browser-async](./test-browser-async/)] for the async version in the browser
+- [test-browser-async](./test-browser-async/) for the async version in the browser
 
 The examples shows importing the `lg2.js` / `lg2-async.js` modules from the local build, but you may also access these from releases available at public CDNs.
 
