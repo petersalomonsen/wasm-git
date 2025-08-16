@@ -62,7 +62,7 @@ if(ENVIRONMENT_IS_WORKER) {
                 bytes_read = buffersize;
             }
             const responseChunk = new Uint8Array(connection.xhr.response, connection.resultbufferpointer, bytes_read);
-            writeArrayToMemory(responseChunk, buffer);
+            Module.HEAPU8.set(responseChunk, buffer);
             connection.resultbufferpointer += bytes_read;
             return bytes_read;
         },
@@ -147,7 +147,7 @@ if(ENVIRONMENT_IS_WORKER) {
             Atomics.wait(connection.statusArray, 0, 0);
             const bytes_read = connection.statusArray[0];
 
-            writeArrayToMemory(connection.resultArray.slice(0, bytes_read), buffer);
+            Module.HEAPU8.set(connection.resultArray.slice(0, bytes_read), buffer);
 
             //console.log('read with connectionNo', connectionNo, 'length', bytes_read, 'content',
             //        new TextDecoder('utf-8').decode(connection.resultArray.slice(0, bytes_read)));
