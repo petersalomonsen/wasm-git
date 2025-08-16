@@ -34,7 +34,7 @@ email = test@example.com
 
         assert(FS.readdir('.').indexOf('README.md') > -1);
         FS.chdir('..');
-        rmSync('clonedir', {recursive: true, force: true});
+        rmSync(clonedir, {recursive: true, force: true});
         console.log('clone to nodefs suceeded');
     });
 });

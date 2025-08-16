@@ -28,17 +28,19 @@ if (!Module.print && !Module.printErr) {
         capturedError = [];
         quitStatus = null;
         
-        Module.callMain(args);
+        const exitCode = Module.callMain(args);
         
         const ret = capturedOutput.join('\n');
         const err = capturedError.join('\n');
         capturedOutput = null;
         capturedError = null;
 
-        if (!quitStatus) {
-            return ret;
-        } else {
+        if (exitCode !== 0) {
+            throw(exitCode + ': ' + err);
+        } else if (quitStatus) {
             throw(quitStatus + ': ' + err);
+        } else {
+            return ret;
         }
     }
 }
