@@ -7,7 +7,7 @@ on:
 jobs:
   detectonly:
     name: Detect use of .only
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - name: Detect use of .only
@@ -16,7 +16,7 @@ jobs:
           exit 0
   default:
     name: "Default"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - name: Default
@@ -39,7 +39,7 @@ jobs:
           npm run test-browser
   asyncify:
     name: Asyncify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
       - name: Default
