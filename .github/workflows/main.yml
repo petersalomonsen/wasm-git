@@ -79,7 +79,7 @@ jobs:
           cd emscriptenbuild
           ./build.sh Release-opfs
           cd ..
-          ln -s ../emscriptenbuild/lg2_opfs.js test-browser-opfs/lg2_opfs.js
-          ln -s ../emscriptenbuild/lg2_opfs.wasm test-browser-opfs/lg2_opfs.wasm
+          ln -s ../emscriptenbuild/libgit2/examples/lg2_opfs.js test-browser-opfs/lg2_opfs.js
+          ln -s ../emscriptenbuild/libgit2/examples/lg2_opfs.wasm test-browser-opfs/lg2_opfs.wasm
           set -e
           npm run test-browser-opfs
