@@ -6,10 +6,19 @@ describe('wasm-git OPFS', function() {
     });
 
     let lg, FS;
+    let workingDir, url, currentRepoRootDir, testFile, testContents;
+    
     before(async () => {
         const lgMod = await import(new URL('lg2_opfs.js', import.meta.url));
         lg = await lgMod.default();
         FS = lg.FS;
+        
+        // Initialize test variables
+        workingDir = "/working";
+        url = `${location.origin}/testrepo.git`;
+        currentRepoRootDir = url.substring(url.lastIndexOf('/') + 1);
+        testFile = "test.txt";
+        testContents = "hello-world!";
     });
 
     let APPFS;
@@ -40,15 +49,6 @@ describe('wasm-git OPFS', function() {
     it('should ping the gitserver', async () => {
         const result = await fetch('/testrepo.git/ping').then(res => res.text());
         assert(result === 'pong');
-    });
-
-    let workingDir, url, currentRepoRootDir, testFile, testContents;
-    beforeEach(() => {
-        workingDir = "/working";
-        url = `${location.origin}/testrepo.git`;
-        currentRepoRootDir = url.substring(url.lastIndexOf('/') + 1);
-        testFile = "test.txt";
-        testContents = "hello-world!";
     });
 
     it('should clone a bare repository and push commits', async () => {
