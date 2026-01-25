@@ -30,6 +30,21 @@ elif [ "$1" == "Debug-async" ]; then
     EXTRA_CMAKE_C_FLAGS="$ASYNCIFY_FLAGS"
     POST_JS="--post-js $(pwd)/post-async.js"
     export LG2_OUTPUT_NAME=lg2_async
+# For OPFS builds with WASMFS
+elif [ "$1" == "Release-opfs" ]; then
+    BUILD_TYPE=Release
+    cp ../libgit2patchedfiles/src/transports/emscriptenhttp-async.c ../libgit2/src/libgit2/transports/emscriptenhttp.c
+
+    EXTRA_CMAKE_C_FLAGS="-O3 $ASYNCIFY_FLAGS -sWASMFS -sWASM_BIGINT"
+    POST_JS="--post-js $(pwd)/post-opfs.js"
+    export LG2_OUTPUT_NAME=lg2_opfs
+elif [ "$1" == "Debug-opfs" ]; then
+    BUILD_TYPE=Debug
+    cp ../libgit2patchedfiles/src/transports/emscriptenhttp-async.c ../libgit2/src/libgit2/transports/emscriptenhttp.c
+
+    EXTRA_CMAKE_C_FLAGS="$ASYNCIFY_FLAGS -sWASMFS -sWASM_BIGINT"
+    POST_JS="--post-js $(pwd)/post-opfs.js"
+    export LG2_OUTPUT_NAME=lg2_opfs
 fi
 
 # Before building, remove any ../libgit2/src/ transports/emscriptenhttp.c left from running setup.sh 

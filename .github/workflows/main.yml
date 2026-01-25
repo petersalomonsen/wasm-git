@@ -59,3 +59,27 @@ jobs:
           cd ..
           set -e
           npm run test-browser-async
+  opfs:
+    name: OPFS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: OPFS Build and Test
+        run: |
+          npm install
+          npx playwright install-deps
+          npx playwright install
+          sh setup.sh
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install latest
+          ./emsdk activate latest
+          cd ..
+          source ./emsdk/emsdk_env.sh
+          cd emscriptenbuild
+          ./build.sh Release-opfs
+          cd ..
+          ln -s ../emscriptenbuild/lg2_opfs.js test-browser-opfs/lg2_opfs.js
+          ln -s ../emscriptenbuild/lg2_opfs.wasm test-browser-opfs/lg2_opfs.wasm
+          set -e
+          npm run test-browser-opfs

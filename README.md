@@ -31,17 +31,48 @@ Videos showing example applications using wasm-git can bee seen in [this playlis
 
 # Examples
 
-Wasm-git packages are built in two variants: Synchronuous and Asynchronuous. To run the sync version in the browser, a [webworker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) is needed. This is because of the use of synchronous http requests and long running operations that would block if running on the main thread. The sync version has the smallest binary, but need extra client code to communicate with the web worker. When using the sync version in nodejs [worker_threads](https://nodejs.org/api/worker_threads.html) are used, with [Atomics](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics) to exchange data between threads.
+Wasm-git packages are built in three variants: Synchronous, Asynchronous, and OPFS. To run the sync version in the browser, a [webworker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) is needed. This is because of the use of synchronous http requests and long running operations that would block if running on the main thread. The sync version has the smallest binary, but need extra client code to communicate with the web worker. When using the sync version in nodejs [worker_threads](https://nodejs.org/api/worker_threads.html) are used, with [Atomics](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics) to exchange data between threads.
 
 The async version use [Emscripten Asyncify](https://emscripten.org/docs/porting/asyncify.html), which allows calling the Wasm-git functions with `async` / `await`. It can also run from the main thread in the browser. Asyncify increase the binary size because of instrumentation to unwind and rewind WebAssembly state, but makes it possible to have simple client code without exchanging data with worker threads like in the sync version.
+
+The OPFS version also uses Asyncify and adds support for Emscripten's WASMFS with the OPFS (Origin Private File System) backend. OPFS provides better performance and quota management compared to IDBFS, making it ideal for modern browser-based applications that need persistent storage.
 
 Examples of using Wasm-git can be found in the tests:
 
 - [test](./test/) for NodeJS
 - [test-browser](./test-browser/) for the sync version in the browser with a web worker
 - [test-browser-async](./test-browser-async/) for the async version in the browser
+- [test-browser-opfs](./test-browser-opfs/) for the OPFS version in the browser
 
-The examples shows importing the `lg2.js` / `lg2-async.js` modules from the local build, but you may also access these from releases available at public CDNs.
+The examples shows importing the `lg2.js` / `lg2_async.js` / `lg2_opfs.js` modules from the local build, but you may also access these from releases available at public CDNs.
+
+## OPFS Usage Example
+
+```javascript
+// Import the OPFS-enabled wasm-git module
+const lgMod = await import('./lg2_opfs.js');
+const lg = await lgMod.default();
+const FS = lg.FS;
+
+// Create and mount an OPFS filesystem
+const workingDir = '/working';
+FS.mkdir(workingDir);
+FS.mount(FS.filesystems.OPFS, { root: '.' }, workingDir);
+FS.chdir(workingDir);
+
+// Configure git
+FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
+    'name = Your Name\n' +
+    'email = your.email@example.com');
+
+// Use git commands with async/await
+await lg.callMain(['clone', 'https://github.com/user/repo.git', 'repo']);
+FS.chdir('repo');
+FS.writeFile('newfile.txt', 'Hello OPFS!');
+await lg.callMain(['add', 'newfile.txt']);
+await lg.callMain(['commit', '-m', 'Add new file']);
+await lg.callMain(['push']);
+```
 
 # Building and developing
 
@@ -89,6 +120,12 @@ The examples shows importing the `lg2.js` / `lg2-async.js` modules from the loca
    ./build.sh Release-async # Release async build
    ```
 
+   For OPFS versions (with WASMFS and OPFS support):
+   ```bash
+   ./build.sh Debug-opfs   # Debug OPFS build
+   ./build.sh Release-opfs # Release OPFS build
+   ```
+
 5. **Install npm dependencies**
    ```bash
    npm install
@@ -99,6 +136,7 @@ The examples shows importing the `lg2.js` / `lg2-async.js` modules from the loca
    npm test                  # Run Node.js tests
    npm run test-browser      # Run browser tests (sync version)
    npm run test-browser-async # Run browser tests (async version)
+   npm run test-browser-opfs # Run browser tests (OPFS version)
    ```
 
 ## Development Options
@@ -116,8 +154,39 @@ The [Github actions test pipeline](./.github/workflows/main.yml) shows all the c
 After building, you'll find the following files in `emscriptenbuild/libgit2/examples/`:
 - `lg2.js` and `lg2.wasm` - Synchronous version
 - `lg2_async.js` and `lg2_async.wasm` - Asynchronous version with Asyncify
+- `lg2_opfs.js` and `lg2_opfs.wasm` - OPFS version with WASMFS
 
 These files are also available from npm packages and CDNs for production use.
+
+## Filesystem Backends
+
+Wasm-git supports multiple filesystem backends for different use cases:
+
+### MEMFS (Memory File System)
+- **Use case**: In-memory storage, not persisted
+- **Build target**: Default (`./build.sh Release`)
+- **Browser support**: All browsers
+
+### IDBFS (IndexedDB File System)
+- **Use case**: Browser persistent storage using IndexedDB
+- **Build target**: Default (`./build.sh Release`)
+- **Browser support**: All browsers with IndexedDB
+
+### NODEFS (Node.js File System)
+- **Use case**: Node.js native filesystem access
+- **Build target**: Default (`./build.sh Release`)
+- **Platform**: Node.js only
+
+### OPFS (Origin Private File System via WASMFS)
+- **Use case**: Modern browser persistent storage with better performance and quota management
+- **Build target**: OPFS builds (`./build.sh Release-opfs` or `./build.sh Debug-opfs`)
+- **Browser support**: 
+  - Chrome 86+
+  - Edge 86+
+  - Firefox 111+
+  - Safari 15.2+
+- **Advantages**: Better performance and quota compared to IDBFS
+- **Note**: Uses Emscripten's WASMFS with OPFS backend, requires async/await like the async build
 
 ## Test Status
 

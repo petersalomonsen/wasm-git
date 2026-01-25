@@ -21,6 +21,7 @@
         "test-browser": "wtr test-browser/**/*.spec.js",
         "test-browser-watch": "wtr test-browser/**/*.spec.js --watch",
         "test-browser-async": "wtr test-browser-async/**/*.spec.js",
+        "test-browser-opfs": "wtr test-browser-opfs/**/*.spec.js",
         "patch-version": "npm --no-git-tag-version version patch"
     },
     "devDependencies": {
