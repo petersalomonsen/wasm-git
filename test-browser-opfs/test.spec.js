@@ -76,13 +76,14 @@ describe('wasm-git OPFS', function() {
         FS.chdir(workingDir);
         FS.rename(currentRepoRootDir, 'junk');
         const dircontents = FS.readdir('.');
-        assert(dircontents.find(entry => entry !== currentRepoRootDir));
+        assert(dircontents.find(entry => entry === 'junk'));
+        assert(!dircontents.find(entry => entry === currentRepoRootDir));
         console.log(`renamed ${currentRepoRootDir}`);
     });
 
     it('should clone the repository with contents', async () => {
         let dircontents = FS.readdir('.');
-        assert(dircontents.find(entry => entry !== testFile));
+        assert(!dircontents.find(entry => entry === testFile));
 
         await lg.callMain(['clone', url, currentRepoRootDir]);
         dircontents = FS.readdir(currentRepoRootDir);
