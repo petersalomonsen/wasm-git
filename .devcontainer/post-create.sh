@@ -6,8 +6,8 @@ sh setup.sh
 git clone https://github.com/emscripten-core/emsdk.git
 cd emsdk
 git pull
-./emsdk install latest
-./emsdk activate latest
+./emsdk install 4.0.23
+./emsdk activate 4.0.23
 cd ..
 
 npx playwright install-deps

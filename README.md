@@ -78,7 +78,7 @@ await lg.callMain(['push']);
 
 ## Prerequisites
 
-- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) (tested with version 4.0.13)
+- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) (version 4.0.23)
 - Node.js (v18 or higher)
 - CMake
 - Make
@@ -95,8 +95,8 @@ await lg.callMain(['push']);
    ```bash
    git clone https://github.com/emscripten-core/emsdk.git
    cd emsdk
-   ./emsdk install latest
-   ./emsdk activate latest
+   ./emsdk install 4.0.23
+   ./emsdk activate 4.0.23
    source ./emsdk_env.sh
    cd ..
    ```
