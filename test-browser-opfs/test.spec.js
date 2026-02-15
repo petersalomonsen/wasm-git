@@ -78,6 +78,10 @@ describe('wasm-git OPFS', function () {
             }
         );
         assert(result.data.dircontents.find(entry => entry === 'test.txt'));
+        // Verify push output for debugging
+        if (result.data.pusherr) {
+            console.log('Push stderr:', result.data.pusherr);
+        }
     });
 
     it('should remove the local clone of the repository', async () => {
@@ -107,9 +111,9 @@ describe('wasm-git OPFS', function () {
                 }
             }
         );
-        assert(result.data.dircontents.length > 2);
-        assert(result.data.dircontents.find(entry => entry === '.git'));
-        assert(result.data.dircontents.find(entry => entry === 'test.txt'));
+        assert(result.data.dircontents.length > 2, 'clone should have entries, got: ' + JSON.stringify(result.data.dircontents));
+        assert(result.data.dircontents.find(entry => entry === '.git'), '.git not found in: ' + JSON.stringify(result.data.dircontents));
+        assert(result.data.dircontents.find(entry => entry === 'test.txt'), 'test.txt not found in: ' + JSON.stringify(result.data.dircontents));
 
         worker.postMessage({ command: 'readfile', filename: 'test.txt' });
         result = await new Promise(resolve =>

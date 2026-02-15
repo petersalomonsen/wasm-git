@@ -66,7 +66,7 @@ onmessage = (msg) => {
     lg.callMain(['commit', '-m', `edited ${msg.data.filename}`]);
     lg.callMain(['log']);
     lg.callMain(['push']);
-    postMessage({ dircontents: FS.readdir('.') });
+    postMessage({ dircontents: FS.readdir('.'), pushlog: stdout.join('\n'), pusherr: stderr.join('\n') });
   } else if (msg.data.command === 'writefile') {
     FS.writeFile(msg.data.filename, msg.data.contents);
     postMessage({ dircontents: FS.readdir('.') });
