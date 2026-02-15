@@ -28,6 +28,13 @@ FS.writeFile('/home/web_user/.gitconfig',
 name = ${username}
 email = ${useremail}`);
 
+// Diagnostics for debugging CI issues
+console.log('Worker environment:', {
+  crossOriginIsolated: self.crossOriginIsolated,
+  hasSharedArrayBuffer: typeof SharedArrayBuffer !== 'undefined',
+  hasOPFS: 'storage' in navigator && 'getDirectory' in navigator.storage
+});
+
 // Set up OPFS-backed working directory
 const backend = lg._lg2_create_opfs_backend();
 if (!backend) {
