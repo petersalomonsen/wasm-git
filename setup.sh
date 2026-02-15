@@ -6,7 +6,8 @@ mv libgit2-1.7.1 libgit2
 rm libgit2.tar.gz
 rm libgit2/src/libgit2/transports/http.c
 cp -r libgit2patchedfiles/examples/* libgit2/examples/
-cp -r libgit2patchedfiles/src/* libgit2/src/libgit2/
+cp -r libgit2patchedfiles/src/transports/* libgit2/src/libgit2/transports/
+cp -r libgit2patchedfiles/src/util/* libgit2/src/util/
 echo 'set(CMAKE_C90_STANDARD_COMPILE_OPTION "-std=gnu90")' >> libgit2/examples/CMakeLists.txt
 echo 'set(CMAKE_C90_STANDARD_COMPILE_OPTION "-std=gnu90")' >> libgit2/src/libgit2/CMakeLists.txt
 echo 'set(CMAKE_C90_STANDARD_COMPILE_OPTION "-std=gnu90")' >> libgit2/src/util/CMakeLists.txt

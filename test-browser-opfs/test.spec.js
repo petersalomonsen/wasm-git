@@ -1,99 +1,123 @@
-describe('wasm-git OPFS', function() {
+describe('wasm-git OPFS', function () {
     this.timeout(20000);
 
-    it('should have window', () => {
-        assert(window !== undefined);
+    let worker;
+
+    const createWorker = async () => {
+        worker = new Worker(new URL('worker.js', import.meta.url), {type: 'module'});
+        await new Promise(resolve => {
+            worker.onmessage = msg => {
+                if (msg.data.ready) {
+                    resolve(msg);
+                }
+            }
+        });
+    }
+
+    const callWorker = async (command, params) => {
+        return await new Promise(resolve => {
+            worker.onmessage = msg => resolve(msg.data);
+            worker.postMessage(Object.assign({
+                command: command
+            }, params));
+        });
+    };
+
+    this.afterAll(async () => {
+        assert.equal((await callWorker('deletelocal')).deleted, 'testrepo.git');
+        worker.terminate();
     });
 
-    let lg, FS;
-    let workingDir, url, currentRepoRootDir, testFile, testContents;
-    
-    before(async () => {
-        const lgMod = await import(new URL('lg2_opfs.js', import.meta.url));
-        lg = await lgMod.default();
-        FS = lg.FS;
-        
-        // Initialize test variables
-        workingDir = "/working";
-        url = `${location.origin}/testrepo.git`;
-        currentRepoRootDir = url.substring(url.lastIndexOf('/') + 1);
-        testFile = "test.txt";
-        testContents = "hello-world!";
-    });
-
-    let APPFS;
-    it('should create an OPFS filesystem backend', () => {
-        // With WASMFS, we use the default OPFS backend
-        APPFS = FS.filesystems.OPFS || FS.filesystems.MEMFS;
-        assert(typeof(APPFS) === 'object' );
-    });
-    
-    it('should make a working directory', () => {
-        FS.mkdir(workingDir);
-    });
-    
-    it('should mount the filesystem on the working directory', () => {
-        FS.mount(APPFS, { root: '.' }, workingDir);
-    });
-    
-    it('should make a directory and mount a memory filesystem on it', () => {
-        FS.chdir(workingDir);    
-    });
-    
-    it('should write a .gitconfig file', () => {
-        FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
-                    'name = Test User\n' +
-                    'email = test@example.com');
+    it('should get ready message from web worker', async () => {
+        await createWorker();
     });
 
     it('should ping the gitserver', async () => {
         const result = await fetch('/testrepo.git/ping').then(res => res.text());
-        assert(result === 'pong');
+        assert.equal(result, 'pong');
+    });
+
+    it('should find no existing repository', async () => {
+        worker.postMessage({ command: 'synclocal', url: `${location.origin}/testrepo.git` });
+        let result = await new Promise(resolve =>
+            worker.onmessage = msg => {
+                if (msg.data.notfound) {
+                    resolve(msg);
+                } else {
+                    console.log(msg.data);
+                }
+            }
+        );
+        assert(result.data.notfound);
     });
 
     it('should clone a bare repository and push commits', async () => {
-        console.log(`git clone ${url}`);
-        await lg.callMain(['clone', url, currentRepoRootDir]);
-        FS.chdir(currentRepoRootDir);
+        worker.postMessage({ command: 'clone', url: `${location.origin}/testrepo.git` });
+        let result = await new Promise(resolve =>
+            worker.onmessage = msg => {
+                if (msg.data.dircontents) {
+                    resolve(msg);
+                } else {
+                    console.log(msg.data);
+                }
+            }
+        );
+        assert(result.data.dircontents.length > 2);
+        assert(result.data.dircontents.find(entry => entry === '.git'));
 
-        let dircontents = FS.readdir('.');
-        console.log(dircontents);
-        assert(dircontents.length > 2);
-        assert(dircontents.find(entry => entry === '.git'));
-
-        FS.writeFile(testFile, testContents);
-        await lg.callMain(['add', '--verbose', testFile]);
-        await lg.callMain(['commit','-m', `edited ${testFile}`]);
-        await lg.callMain(['push']);
-
-        dircontents = FS.readdir('.');
-        console.log(dircontents);
-        assert(dircontents.length > 2);
-        assert(dircontents.find(entry => entry === testFile));
+        worker.postMessage({
+            command: 'writecommitandpush',
+            filename: 'test.txt',
+            contents: 'hello world!'
+        });
+        result = await new Promise(resolve =>
+            worker.onmessage = msg => {
+                if (msg.data.dircontents) {
+                    resolve(msg);
+                } else {
+                    console.log(msg.data);
+                }
+            }
+        );
+        assert(result.data.dircontents.find(entry => entry === 'test.txt'));
     });
 
-    it('rename the local clone of the repository', async () => {
-        FS.chdir(workingDir);
-        FS.rename(currentRepoRootDir, 'junk');
-        const dircontents = FS.readdir('.');
-        assert(dircontents.find(entry => entry === 'junk'));
-        assert(!dircontents.find(entry => entry === currentRepoRootDir));
-        console.log(`renamed ${currentRepoRootDir}`);
+    it('should remove the local clone of the repository', async () => {
+        assert.equal((await callWorker('deletelocal')).deleted, 'testrepo.git');
+        worker.terminate();
     });
 
     it('should clone the repository with contents', async () => {
-        let dircontents = FS.readdir('.');
-        assert(!dircontents.find(entry => entry === testFile));
+        await createWorker();
+        assert.isTrue((await callWorker('synclocal', {url: `${location.origin}/testrepo.git` })).notfound);
 
-        await lg.callMain(['clone', url, currentRepoRootDir]);
-        dircontents = FS.readdir(currentRepoRootDir);
-        assert(dircontents.length > 2);
-        assert(dircontents.find(entry => entry === '.git'));
-        assert(dircontents.find(entry => entry === testFile));
+        let result = await callWorker('readfile', { filename: 'test.txt' });
+        assert.exists(result.stderr);
 
-        console.log(`${currentRepoRootDir}/${testFile}`)
-        const filecontents = FS.readFile(`${currentRepoRootDir}/${testFile}`, {encoding: 'utf8'});
-        console.log('contents:', filecontents);
-        assert(String(filecontents) === testContents);
+        worker.postMessage({ command: 'clone', url: `${location.origin}/testrepo.git` });
+        result = await new Promise(resolve =>
+            worker.onmessage = msg => {
+                if (msg.data.dircontents) {
+                    resolve(msg);
+                } else {
+                    console.log(msg.data);
+                }
+            }
+        );
+        assert(result.data.dircontents.length > 2);
+        assert(result.data.dircontents.find(entry => entry === '.git'));
+        assert(result.data.dircontents.find(entry => entry === 'test.txt'));
+
+        worker.postMessage({ command: 'readfile', filename: 'test.txt' });
+        result = await new Promise(resolve =>
+            worker.onmessage = msg => {
+                if (msg.data.filecontents) {
+                    resolve(msg);
+                } else {
+                    console.log(msg.data);
+                }
+            }
+        );
+        assert.equal(result.data.filecontents, 'hello world!');
     });
 });
