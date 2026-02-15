@@ -38,17 +38,15 @@ describe('wasm-git OPFS', function () {
     });
 
     it('should find no existing repository', async () => {
-        worker.postMessage({ command: 'synclocal', url: `${location.origin}/testrepo.git` });
-        let result = await new Promise(resolve =>
-            worker.onmessage = msg => {
-                if (msg.data.notfound) {
-                    resolve(msg);
-                } else {
-                    console.log(msg.data);
-                }
-            }
-        );
-        assert(result.data.notfound);
+        // OPFS data may persist from a previous test run; clean up via native API
+        try {
+            const root = await navigator.storage.getDirectory();
+            await root.removeEntry('testrepo.git', { recursive: true });
+        } catch (e) { /* directory doesn't exist, which is expected */ }
+        // Recreate worker so it starts with clean OPFS state
+        worker.terminate();
+        await createWorker();
+        assert.isTrue((await callWorker('synclocal', {url: `${location.origin}/testrepo.git` })).notfound);
     });
 
     it('should clone a bare repository and push commits', async () => {
@@ -88,6 +86,11 @@ describe('wasm-git OPFS', function () {
     });
 
     it('should clone the repository with contents', async () => {
+        // Clean OPFS state before creating new worker
+        try {
+            const root = await navigator.storage.getDirectory();
+            await root.removeEntry('testrepo.git', { recursive: true });
+        } catch (e) { /* directory doesn't exist */ }
         await createWorker();
         assert.isTrue((await callWorker('synclocal', {url: `${location.origin}/testrepo.git` })).notfound);
 
