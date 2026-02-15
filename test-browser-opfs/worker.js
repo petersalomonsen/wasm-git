@@ -28,20 +28,14 @@ FS.writeFile('/home/web_user/.gitconfig',
 name = ${username}
 email = ${useremail}`);
 
-// Diagnostics for debugging CI issues
-console.log('Worker environment:', {
-  crossOriginIsolated: self.crossOriginIsolated,
-  hasSharedArrayBuffer: typeof SharedArrayBuffer !== 'undefined',
-  hasOPFS: 'storage' in navigator && 'getDirectory' in navigator.storage
-});
-
 // Set up OPFS-backed working directory
 const backend = lg._lg2_create_opfs_backend();
 if (!backend) {
     throw new Error('Failed to create OPFS backend');
 }
 const workingDir = '/opfs';
-const mkdirResult = lg._lg2_create_directory(workingDir, 0o777, backend);
+// Use ccall to properly marshal the JS string to a C const char* pointer
+const mkdirResult = lg.ccall('lg2_create_directory', 'number', ['string', 'number', 'number'], [workingDir, 0o777, backend]);
 if (mkdirResult !== 0) {
     throw new Error('Failed to create OPFS directory, error: ' + mkdirResult);
 }

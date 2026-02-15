@@ -42,7 +42,7 @@ elif [ "$1" == "Release-opfs" ]; then
     export LG2_OUTPUT_NAME=lg2_opfs
     # WASMFS doesn't use the old FS libraries
     FS_LIBRARIES=""
-    FS_EXPORTS="'FS','callMain','HEAPU8'"
+    FS_EXPORTS="'FS','callMain','HEAPU8','ccall'"
     EXTRA_CMAKE_DEFINES="-DUSE_THREADS=OFF -DUSE_NSEC=OFF"
     # Copy OPFS exports helper to examples for WASMFS builds
     cp ../libgit2patchedfiles/examples/opfs_exports.c ../libgit2/examples/opfs_exports.c
@@ -54,7 +54,7 @@ elif [ "$1" == "Debug-opfs" ]; then
     export LG2_OUTPUT_NAME=lg2_opfs
     # WASMFS doesn't use the old FS libraries
     FS_LIBRARIES=""
-    FS_EXPORTS="'FS','callMain','HEAPU8'"
+    FS_EXPORTS="'FS','callMain','HEAPU8','ccall'"
     EXTRA_CMAKE_DEFINES="-DUSE_THREADS=OFF -DUSE_NSEC=OFF"
     # Copy OPFS exports helper to examples for WASMFS builds
     cp ../libgit2patchedfiles/examples/opfs_exports.c ../libgit2/examples/opfs_exports.c
