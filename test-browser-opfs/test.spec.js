@@ -78,10 +78,6 @@ describe('wasm-git OPFS', function () {
             }
         );
         assert(result.data.dircontents.find(entry => entry === 'test.txt'));
-        // Verify push output for debugging
-        if (result.data.pusherr) {
-            console.log('Push stderr:', result.data.pusherr);
-        }
     });
 
     it('should remove the local clone of the repository', async () => {
@@ -90,19 +86,19 @@ describe('wasm-git OPFS', function () {
     });
 
     it('should clone the repository with contents', async () => {
-        // Clean OPFS state before creating new worker
+        // Clean OPFS state and create fresh worker to verify push persisted to server
         try {
             const root = await navigator.storage.getDirectory();
             await root.removeEntry('testrepo.git', { recursive: true });
         } catch (e) { /* directory doesn't exist */ }
         await createWorker();
-        assert.isTrue((await callWorker('synclocal', {url: `${location.origin}/testrepo.git` })).notfound);
 
-        let result = await callWorker('readfile', { filename: 'test.txt' });
-        assert.exists(result.stderr);
+        // Ensure any WASMFS-cached copy is removed so clone fetches fresh from server
+        await callWorker('synclocal', {url: `${location.origin}/testrepo.git` });
+        await callWorker('deletelocal');
 
         worker.postMessage({ command: 'clone', url: `${location.origin}/testrepo.git` });
-        result = await new Promise(resolve =>
+        let result = await new Promise(resolve =>
             worker.onmessage = msg => {
                 if (msg.data.dircontents) {
                     resolve(msg);

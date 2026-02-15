@@ -41,7 +41,7 @@ if (mkdirResult !== 0) {
 }
 FS.chdir(workingDir);
 
-let currentRepoRootDir;
+let currentRepoDir; // absolute path to the current repo, e.g. '/opfs/testrepo.git'
 
 function rmdirRecursive(path) {
   const entries = FS.readdir(path).filter(e => e !== '.' && e !== '..');
@@ -57,32 +57,54 @@ function rmdirRecursive(path) {
   FS.rmdir(path);
 }
 
+// WASMFS has a bug where getcwd() drops mount-point names for directories
+// backed by a different backend (e.g. OPFS mounted under MemoryBackend root).
+// getcwd() returns '//repo' instead of '/opfs/repo', which breaks libgit2's
+// repository discovery. Work around this by creating a symlink at the root
+// so the broken path still resolves to the correct OPFS-backed directory.
+function createMountPointSymlink(repoName) {
+  try { FS.unlink('/' + repoName); } catch(e) {}
+  FS.symlink(workingDir + '/' + repoName, '/' + repoName);
+}
+
+function removeMountPointSymlink(repoName) {
+  try { FS.unlink('/' + repoName); } catch(e) {}
+}
+
 onmessage = (msg) => {
   stderr = [];
   stdout = [];
   if (msg.data.command === 'writecommitandpush') {
+    FS.chdir(currentRepoDir);
     FS.writeFile(msg.data.filename, msg.data.contents);
+    FS.chdir(currentRepoDir);
     lg.callMain(['add', '--verbose', msg.data.filename]);
+    FS.chdir(currentRepoDir);
     lg.callMain(['commit', '-m', `edited ${msg.data.filename}`]);
+    FS.chdir(currentRepoDir);
     lg.callMain(['log']);
+    FS.chdir(currentRepoDir);
     lg.callMain(['push']);
-    postMessage({ dircontents: FS.readdir('.'), pushlog: stdout.join('\n'), pusherr: stderr.join('\n') });
+    FS.chdir(currentRepoDir);
+    postMessage({ dircontents: FS.readdir('.') });
   } else if (msg.data.command === 'writefile') {
+    FS.chdir(currentRepoDir);
     FS.writeFile(msg.data.filename, msg.data.contents);
     postMessage({ dircontents: FS.readdir('.') });
   } else if (msg.data.command === 'synclocal') {
-    currentRepoRootDir = msg.data.url.substring(msg.data.url.lastIndexOf('/') + 1);
-    console.log('synclocal', currentRepoRootDir);
+    const repoName = msg.data.url.substring(msg.data.url.lastIndexOf('/') + 1);
+    currentRepoDir = workingDir + '/' + repoName;
 
     // With OPFS, files are persisted automatically - check if directory exists
     try {
-      const contents = FS.readdir(currentRepoRootDir);
+      const contents = FS.readdir(currentRepoDir);
       if (contents.find(file => file === '.git')) {
-        FS.chdir(currentRepoRootDir);
+        createMountPointSymlink(repoName);
+        FS.chdir(currentRepoDir);
         postMessage({ dircontents: FS.readdir('.') });
-        console.log(currentRepoRootDir, 'found in OPFS');
+        console.log(repoName, 'found in OPFS');
       } else if (msg.data.newrepo) {
-        FS.chdir(currentRepoRootDir);
+        FS.chdir(currentRepoDir);
         postMessage({ empty: true });
       } else {
         postMessage({ notfound: true });
@@ -90,28 +112,35 @@ onmessage = (msg) => {
     } catch (e) {
       // Directory doesn't exist
       if (msg.data.newrepo) {
-        FS.mkdir(currentRepoRootDir);
-        FS.chdir(currentRepoRootDir);
+        FS.mkdir(currentRepoDir);
+        FS.chdir(currentRepoDir);
         postMessage({ empty: true });
       } else {
         postMessage({ notfound: true });
       }
     }
   } else if (msg.data.command === 'deletelocal') {
+    const repoName = currentRepoDir ? currentRepoDir.split('/').pop() : null;
     try {
       FS.chdir(workingDir);
-      rmdirRecursive(workingDir + '/' + currentRepoRootDir);
+      if (currentRepoDir) rmdirRecursive(currentRepoDir);
     } catch (e) {
       console.warn('deletelocal error:', e);
     }
-    postMessage({ deleted: currentRepoRootDir });
+    if (repoName) removeMountPointSymlink(repoName);
+    postMessage({ deleted: repoName });
   } else if (msg.data.command === 'dir') {
     postMessage({ dircontents: FS.readdir('.') });
   } else if (msg.data.command === 'clone') {
-    currentRepoRootDir = msg.data.url.substring(msg.data.url.lastIndexOf('/') + 1);
+    const repoName = msg.data.url.substring(msg.data.url.lastIndexOf('/') + 1);
+    currentRepoDir = workingDir + '/' + repoName;
 
-    lg.callMain(['clone', msg.data.url, currentRepoRootDir]);
-    FS.chdir(currentRepoRootDir);
+    // Use absolute path for clone destination to avoid CWD ambiguity
+    lg.callMain(['clone', msg.data.url, currentRepoDir]);
+
+    // Create symlink to work around WASMFS getcwd() bug (see comment above)
+    createMountPointSymlink(repoName);
+    FS.chdir(currentRepoDir);
 
     postMessage({ dircontents: FS.readdir('.') });
   } else if (msg.data.command === 'readfile') {
@@ -125,6 +154,7 @@ onmessage = (msg) => {
     }
   } else {
     const args = msg.data.args || [];
+    if (currentRepoDir) FS.chdir(currentRepoDir);
     lg.callMain([msg.data.command, ...args]);
     postMessage({ stdout: stdout.join('\n'), stderr: stderr.join('\n'), });
   }
