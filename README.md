@@ -11,7 +11,7 @@ The main purpose of bringing git to the browser, is to enable storage of web app
 ## Compatibility
 
 - **libgit2**: v1.7.1
-- **Emscripten**: Tested with 4.0.13 (compatible with 3.1.74+)
+- **Emscripten**: Pinned to 4.0.23
 - **Node.js**: v18+
 - **Browsers**: Modern browsers with WebAssembly support
 
@@ -35,7 +35,7 @@ Wasm-git packages are built in three variants: Synchronous, Asynchronous, and OP
 
 The async version use [Emscripten Asyncify](https://emscripten.org/docs/porting/asyncify.html), which allows calling the Wasm-git functions with `async` / `await`. It can also run from the main thread in the browser. Asyncify increase the binary size because of instrumentation to unwind and rewind WebAssembly state, but makes it possible to have simple client code without exchanging data with worker threads like in the sync version.
 
-The OPFS version also uses Asyncify and adds support for Emscripten's WASMFS with the OPFS (Origin Private File System) backend. OPFS provides better performance and quota management compared to IDBFS, making it ideal for modern browser-based applications that need persistent storage.
+The OPFS version uses Emscripten's WASMFS with the OPFS (Origin Private File System) backend. Unlike the async version, it does not use Asyncify — instead it runs synchronously inside a Web Worker (using pthreads internally for the WASMFS OPFS backend). OPFS provides better performance and quota management compared to IDBFS, making it ideal for modern browser-based applications that need persistent storage.
 
 Examples of using Wasm-git can be found in the tests:
 
@@ -48,31 +48,51 @@ The examples shows importing the `lg2.js` / `lg2_async.js` / `lg2_opfs.js` modul
 
 ## OPFS Usage Example
 
+The OPFS version must run in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) because it requires [SharedArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer) (for pthreads), which in turn requires `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`) HTTP headers.
+
+**worker.js** (Web Worker):
 ```javascript
 // Import the OPFS-enabled wasm-git module
 const lgMod = await import('./lg2_opfs.js');
 const lg = await lgMod.default();
 const FS = lg.FS;
 
-// Create and mount an OPFS filesystem
-const workingDir = '/working';
-FS.mkdir(workingDir);
-FS.mount(FS.filesystems.OPFS, { root: '.' }, workingDir);
-FS.chdir(workingDir);
+// WASMFS doesn't pre-create /home/web_user like MEMFS
+try { FS.mkdir('/home'); } catch(e) {}
+try { FS.mkdir('/home/web_user'); } catch(e) {}
+FS.writeFile('/home/web_user/.gitconfig',
+  '[user]\n  name = Your Name\n  email = your.email@example.com');
 
-// Configure git
-FS.writeFile('/home/web_user/.gitconfig', '[user]\n' +
-    'name = Your Name\n' +
-    'email = your.email@example.com');
+// Create an OPFS-backed directory using the WASMFS OPFS backend
+const backend = lg._lg2_create_opfs_backend();
+const workingDir = '/opfs';
+// Use ccall to marshal the JS string to a C pointer
+lg.ccall('lg2_create_directory', 'number', ['string', 'number', 'number'],
+         [workingDir, 0o777, backend]);
 
-// Use git commands with async/await
-await lg.callMain(['clone', 'https://github.com/user/repo.git', 'repo']);
-FS.chdir('repo');
+// Clone using absolute path to avoid CWD ambiguity with WASMFS
+const repoDir = workingDir + '/myrepo';
+lg.callMain(['clone', 'https://github.com/user/repo.git', repoDir]);
+
+// Work around a WASMFS getcwd() bug: create a root symlink so the path
+// returned by getcwd() resolves correctly for libgit2's repo discovery.
+FS.symlink(repoDir, '/myrepo');
+FS.chdir(repoDir);
+
+// Re-set CWD before each callMain since WASMFS may reset it
+FS.chdir(repoDir);
 FS.writeFile('newfile.txt', 'Hello OPFS!');
-await lg.callMain(['add', 'newfile.txt']);
-await lg.callMain(['commit', '-m', 'Add new file']);
-await lg.callMain(['push']);
+FS.chdir(repoDir);
+lg.callMain(['add', 'newfile.txt']);
+FS.chdir(repoDir);
+lg.callMain(['commit', '-m', 'Add new file']);
+FS.chdir(repoDir);
+lg.callMain(['push']);
+
+postMessage({ done: true });
 ```
+
+See [test-browser-opfs/worker.js](./test-browser-opfs/worker.js) for a complete working example.
 
 # Building and developing
 
@@ -180,20 +200,10 @@ Wasm-git supports multiple filesystem backends for different use cases:
 ### OPFS (Origin Private File System via WASMFS)
 - **Use case**: Modern browser persistent storage with better performance and quota management
 - **Build target**: OPFS builds (`./build.sh Release-opfs` or `./build.sh Debug-opfs`)
-- **Browser support**: 
-  - Chrome 86+
-  - Edge 86+
-  - Firefox 111+
-  - Safari 15.2+
+- **Browser support**: Chrome 86+, Edge 86+, Firefox 111+, Safari 15.2+
 - **Advantages**: Better performance and quota compared to IDBFS
-- **Note**: Uses Emscripten's WASMFS with OPFS backend, requires async/await like the async build
-
-## Test Status
-
-All tests are currently passing:
-- ✅ Node.js tests: 6/6 passing
-- ✅ Browser tests (sync): 18/18 passing
-- ✅ Browser async tests: Should work similarly to sync version
+- **Requirements**: Must run in a Web Worker; server must send `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`) headers to enable SharedArrayBuffer
+- **Note**: Uses Emscripten's WASMFS with OPFS backend and `-pthread` (no Asyncify); `callMain` is synchronous
 
 ## Troubleshooting
 
