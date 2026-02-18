@@ -47,10 +47,11 @@ function rmdirRecursive(path) {
   const entries = FS.readdir(path).filter(e => e !== '.' && e !== '..');
   for (const entry of entries) {
     const fullPath = path + '/' + entry;
-    const stat = FS.stat(fullPath);
-    if (FS.isDir(stat.mode)) {
+    try {
+      // FS.readdir throws ENOTDIR for non-directories; use it to detect dirs
+      FS.readdir(fullPath);
       rmdirRecursive(fullPath);
-    } else {
+    } catch (e) {
       FS.unlink(fullPath);
     }
   }

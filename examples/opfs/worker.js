@@ -58,7 +58,13 @@ let currentRepoDir;
 function rmdirRecursive(p) {
     for (const entry of FS.readdir(p).filter(e => e !== '.' && e !== '..')) {
         const full = p + '/' + entry;
-        FS.isDir(FS.stat(full).mode) ? rmdirRecursive(full) : FS.unlink(full);
+        try {
+            // FS.readdir throws ENOTDIR for files; use it to detect directories
+            FS.readdir(full);
+            rmdirRecursive(full);
+        } catch (e) {
+            FS.unlink(full);
+        }
     }
     FS.rmdir(p);
 }
@@ -84,7 +90,9 @@ function removeMountPointSymlink(repoName) {
 // ---------------------------------------------------------------------------
 // Message handler
 // ---------------------------------------------------------------------------
-onmessage = (msg) => {
+// The message handler is async so we can await native OPFS cleanup before
+// synchronous callMain operations (messages are always sent one at a time).
+onmessage = async (msg) => {
     stdout = [];
     stderr = [];
 
@@ -93,6 +101,14 @@ onmessage = (msg) => {
     if (command === 'clone') {
         const repoName = msg.data.url.substring(msg.data.url.lastIndexOf('/') + 1);
         currentRepoDir = workingDir + '/' + repoName;
+        // Clean up both WASMFS in-memory tree and native OPFS before cloning.
+        // Both layers must be cleared: rmdirRecursive clears the WASMFS tree,
+        // and removeEntry clears the underlying OPFS storage.
+        try { rmdirRecursive(currentRepoDir); } catch (e) {}
+        try {
+            const opfsRoot = await navigator.storage.getDirectory();
+            await opfsRoot.removeEntry(repoName, { recursive: true });
+        } catch (e) { /* directory did not exist */ }
         // Use absolute path to avoid CWD ambiguity
         lg.callMain(['clone', msg.data.url, currentRepoDir]);
         createMountPointSymlink(repoName);
@@ -117,9 +133,17 @@ onmessage = (msg) => {
             FS.chdir(workingDir);
             if (currentRepoDir) rmdirRecursive(currentRepoDir);
         } catch (e) {
-            console.warn('deletelocal error:', e);
+            console.warn('deletelocal WASMFS error:', e);
         }
-        if (repoName) removeMountPointSymlink(repoName);
+        // Also remove from native OPFS so the deletion is fully persisted.
+        // WASMFS may not propagate all deletions to the underlying OPFS storage.
+        if (repoName) {
+            try {
+                const opfsRoot = await navigator.storage.getDirectory();
+                await opfsRoot.removeEntry(repoName, { recursive: true });
+            } catch (e) { /* already gone */ }
+            removeMountPointSymlink(repoName);
+        }
         currentRepoDir = undefined;
         postMessage({ deleted: repoName });
 

@@ -45,8 +45,8 @@
     </p>
 
     <ol>
-        <li id="step-init"    data-status="pending">Initializing OPFS backend in Web Worker...</li>
         <li id="step-cleanup" data-status="pending">Cleaning up any previous run...</li>
+        <li id="step-init"    data-status="pending">Initializing OPFS backend in Web Worker...</li>
         <li id="step-clone"   data-status="pending">Cloning repository from server...</li>
         <li id="step-push"    data-status="pending">Writing <code>hello.txt</code>, committing and pushing...</li>
         <li id="step-delete"  data-status="pending">Deleting local clone...</li>
@@ -58,6 +58,7 @@
 
     <script type="module">
         const repoUrl = `${location.origin}/testrepo.git`;
+        const repoName = 'testrepo.git';
 
         function setStep(id, status, text) {
             const el = document.getElementById('step-' + id);
@@ -73,10 +74,23 @@
             if (result === 'error')   el.id = 'demo-error';
         }
 
-        const worker = new Worker(new URL('worker.js', import.meta.url), { type: 'module' });
+        // Remove a repo from native OPFS storage (main-thread).
+        // This ensures WASMFS never loads stale data from a previous run.
+        async function clearOPFS() {
+            try {
+                const root = await navigator.storage.getDirectory();
+                await root.removeEntry(repoName, { recursive: true });
+            } catch (e) { /* directory does not exist */ }
+        }
 
-        let resolveNext;
-        worker.onmessage = (msg) => resolveNext?.(msg.data);
+        // Create a fresh worker and wire up messaging helpers.
+        // Each new worker gets a clean WASMFS in-memory tree.
+        let worker, resolveNext;
+        function createWorker() {
+            if (worker) worker.terminate();
+            worker = new Worker(new URL('worker.js', import.meta.url), { type: 'module' });
+            worker.onmessage = (msg) => resolveNext?.(msg.data);
+        }
         const next = () => new Promise(resolve => { resolveNext = resolve; });
         const send = (command, params = {}) => {
             worker.postMessage({ command, ...params });
@@ -84,27 +98,24 @@
         };
 
         async function runDemo() {
-            // 1. Wait for worker to initialise
+            // 1. Clean OPFS and create worker with pristine WASMFS state
+            setStep('cleanup', 'running', 'Cleaning up any previous run...');
+            await clearOPFS();
+            setStep('cleanup', 'success', 'OPFS clean');
+
             setStep('init', 'running', 'Initializing OPFS backend in Web Worker...');
+            createWorker();
             await next();
             setStep('init', 'success', 'OPFS backend initialized');
 
-            // 2. Clean up any previous run (OPFS data persists across page loads)
-            setStep('cleanup', 'running', 'Cleaning up any previous run...');
-            const sync = await send('synclocal', { url: repoUrl });
-            if (sync.dircontents) {
-                await send('deletelocal');
-            }
-            setStep('cleanup', 'success', 'Ready for fresh clone');
-
-            // 3. Clone
+            // 2. Clone
             setStep('clone', 'running', 'Cloning repository from server...');
             const cloneResult = await send('clone', { url: repoUrl });
             if (!cloneResult.dircontents) throw new Error('Clone failed: ' + JSON.stringify(cloneResult));
             const count = cloneResult.dircontents.filter(e => e !== '.' && e !== '..').length;
             setStep('clone', 'success', `Cloned repository (${count} entries in working tree)`);
 
-            // 4. Write, commit, push
+            // 3. Write, commit, push
             setStep('push', 'running', 'Writing <code>hello.txt</code>, committing and pushing...');
             const pushResult = await send('writecommitandpush', {
                 filename: 'hello.txt',
@@ -113,14 +124,16 @@
             if (!pushResult.dircontents) throw new Error('Write/commit/push failed: ' + JSON.stringify(pushResult));
             setStep('push', 'success', '<code>hello.txt</code> written, committed, and pushed to remote');
 
-            // 5. Delete local clone
+            // 4. Delete: terminate worker + clear OPFS natively for a clean re-clone
             setStep('delete', 'running', 'Deleting local clone...');
-            const deleteResult = await send('deletelocal');
-            if (!deleteResult.deleted) throw new Error('Delete failed: ' + JSON.stringify(deleteResult));
-            setStep('delete', 'success', `Local clone deleted (<code>${deleteResult.deleted}</code>)`);
+            worker.terminate();
+            await clearOPFS();
+            setStep('delete', 'success', `Local clone deleted (<code>${repoName}</code>)`);
 
-            // 6. Re-clone to verify push persisted
+            // 5. Re-clone from a fresh worker to verify push persisted on server
             setStep('reclone', 'running', 'Re-cloning to verify push persisted on server...');
+            createWorker();
+            await next();
             const recloneResult = await send('clone', { url: repoUrl });
             if (!recloneResult.dircontents) throw new Error('Re-clone failed: ' + JSON.stringify(recloneResult));
             if (!recloneResult.dircontents.includes('hello.txt')) {
@@ -128,7 +141,7 @@
             }
             setStep('reclone', 'success', 'Re-cloned successfully — <code>hello.txt</code> present');
 
-            // 7. Verify file contents
+            // 6. Verify file contents
             setStep('verify', 'running', 'Verifying <code>hello.txt</code> contents...');
             const readResult = await send('readfile', { filename: 'hello.txt' });
             if (!readResult.filecontents) throw new Error('Read failed: ' + JSON.stringify(readResult));
