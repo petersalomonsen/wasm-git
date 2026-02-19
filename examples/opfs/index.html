@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wasm-git OPFS Example</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 640px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            color: #1f2328;
+        }
+        h1 { margin-bottom: 0.25rem; }
+        p  { color: #656d76; margin-top: 0.25rem; }
+        ol { padding-left: 1.25rem; }
+        li {
+            padding: 0.4rem 0.5rem;
+            margin: 0.2rem 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.95rem;
+        }
+        li[data-status="pending"] { color: #656d76; }
+        li[data-status="running"] { background: #ddf4ff; color: #0969da; }
+        li[data-status="success"] { background: #dafbe1; color: #1a7f37; }
+        li[data-status="error"]   { background: #ffebe9; color: #cf222e; }
+        #status-message {
+            margin-top: 1.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        #status-message[data-result="success"] { color: #1a7f37; }
+        #status-message[data-result="error"]   { color: #cf222e; }
+        code { font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h1>wasm-git OPFS Example</h1>
+    <p>
+        Runs git operations entirely in the browser using the
+        <a href="https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system">Origin Private File System</a>
+        backend. Operations execute synchronously inside a Web Worker (pthreads + WASMFS).
+    </p>
+
+    <ol>
+        <li id="step-cleanup" data-status="pending">Cleaning up any previous run...</li>
+        <li id="step-init"    data-status="pending">Initializing OPFS backend in Web Worker...</li>
+        <li id="step-clone"   data-status="pending">Cloning repository from server...</li>
+        <li id="step-push"    data-status="pending">Writing <code>hello.txt</code>, committing and pushing...</li>
+        <li id="step-delete"  data-status="pending">Deleting local clone...</li>
+        <li id="step-reclone" data-status="pending">Re-cloning to verify push persisted on server...</li>
+        <li id="step-verify"  data-status="pending">Verifying <code>hello.txt</code> contents...</li>
+    </ol>
+
+    <div id="status-message"></div>
+
+    <script type="module">
+        const repoUrl = `${location.origin}/testrepo.git`;
+        const repoName = 'testrepo.git';
+
+        function setStep(id, status, text) {
+            const el = document.getElementById('step-' + id);
+            el.dataset.status = status;
+            el.innerHTML = text;
+        }
+
+        function setStatus(text, result) {
+            const el = document.getElementById('status-message');
+            el.dataset.result = result;
+            el.textContent = text;
+            if (result === 'success') el.id = 'demo-complete';
+            if (result === 'error')   el.id = 'demo-error';
+        }
+
+        // Remove a repo from native OPFS storage (main-thread).
+        // This ensures WASMFS never loads stale data from a previous run.
+        async function clearOPFS() {
+            try {
+                const root = await navigator.storage.getDirectory();
+                await root.removeEntry(repoName, { recursive: true });
+            } catch (e) { /* directory does not exist */ }
+        }
+
+        // Create a fresh worker and wire up messaging helpers.
+        // Each new worker gets a clean WASMFS in-memory tree.
+        let worker, resolveNext;
+        function createWorker() {
+            if (worker) worker.terminate();
+            worker = new Worker(new URL('worker.js', import.meta.url), { type: 'module' });
+            worker.onmessage = (msg) => resolveNext?.(msg.data);
+        }
+        const next = () => new Promise(resolve => { resolveNext = resolve; });
+        const send = (command, params = {}) => {
+            worker.postMessage({ command, ...params });
+            return next();
+        };
+
+        async function runDemo() {
+            // 1. Clean OPFS and create worker with pristine WASMFS state
+            setStep('cleanup', 'running', 'Cleaning up any previous run...');
+            await clearOPFS();
+            setStep('cleanup', 'success', 'OPFS clean');
+
+            setStep('init', 'running', 'Initializing OPFS backend in Web Worker...');
+            createWorker();
+            await next();
+            setStep('init', 'success', 'OPFS backend initialized');
+
+            // 2. Clone
+            setStep('clone', 'running', 'Cloning repository from server...');
+            const cloneResult = await send('clone', { url: repoUrl });
+            if (!cloneResult.dircontents) throw new Error('Clone failed: ' + JSON.stringify(cloneResult));
+            const count = cloneResult.dircontents.filter(e => e !== '.' && e !== '..').length;
+            setStep('clone', 'success', `Cloned repository (${count} entries in working tree)`);
+
+            // 3. Write, commit, push
+            setStep('push', 'running', 'Writing <code>hello.txt</code>, committing and pushing...');
+            const pushResult = await send('writecommitandpush', {
+                filename: 'hello.txt',
+                contents: 'Hello from wasm-git OPFS!\n',
+            });
+            if (!pushResult.dircontents) throw new Error('Write/commit/push failed: ' + JSON.stringify(pushResult));
+            setStep('push', 'success', '<code>hello.txt</code> written, committed, and pushed to remote');
+
+            // 4. Delete: terminate worker + clear OPFS natively for a clean re-clone
+            setStep('delete', 'running', 'Deleting local clone...');
+            worker.terminate();
+            await clearOPFS();
+            setStep('delete', 'success', `Local clone deleted (<code>${repoName}</code>)`);
+
+            // 5. Re-clone from a fresh worker to verify push persisted on server
+            setStep('reclone', 'running', 'Re-cloning to verify push persisted on server...');
+            createWorker();
+            await next();
+            const recloneResult = await send('clone', { url: repoUrl });
+            if (!recloneResult.dircontents) throw new Error('Re-clone failed: ' + JSON.stringify(recloneResult));
+            if (!recloneResult.dircontents.includes('hello.txt')) {
+                throw new Error('hello.txt not found after re-clone: ' + JSON.stringify(recloneResult.dircontents));
+            }
+            setStep('reclone', 'success', 'Re-cloned successfully — <code>hello.txt</code> present');
+
+            // 6. Verify file contents
+            setStep('verify', 'running', 'Verifying <code>hello.txt</code> contents...');
+            const readResult = await send('readfile', { filename: 'hello.txt' });
+            if (!readResult.filecontents) throw new Error('Read failed: ' + JSON.stringify(readResult));
+            const expected = 'Hello from wasm-git OPFS!\n';
+            if (readResult.filecontents !== expected) {
+                throw new Error('Contents mismatch — got: ' + JSON.stringify(readResult.filecontents));
+            }
+            setStep('verify', 'success', `Contents verified: <code>${readResult.filecontents.trim()}</code>`);
+
+            setStatus('All operations completed successfully!', 'success');
+        }
+
+        runDemo().catch(err => {
+            console.error(err);
+            setStatus('Demo failed: ' + err.message, 'error');
+        });
+    </script>
+</body>
+</html>

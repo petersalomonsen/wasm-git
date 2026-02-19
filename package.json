@@ -14,6 +14,8 @@
         "lg2.wasm",
         "lg2_async.js",
         "lg2_async.wasm",
+        "lg2_opfs.js",
+        "lg2_opfs.wasm",
         "README.md"
     ],
     "scripts": {
@@ -21,9 +23,12 @@
         "test-browser": "wtr test-browser/**/*.spec.js",
         "test-browser-watch": "wtr test-browser/**/*.spec.js --watch",
         "test-browser-async": "wtr test-browser-async/**/*.spec.js",
+        "test-browser-opfs": "wtr --config web-test-runner-opfs.config.js",
+        "test-opfs-example": "playwright test --config playwright-opfs.config.js",
         "patch-version": "npm --no-git-tag-version version patch"
     },
     "devDependencies": {
+        "@playwright/test": "^1.58.2",
         "@web/test-runner": "^0.20.2",
         "@web/test-runner-playwright": "^0.11.1",
         "cgi": "^0.3.1",

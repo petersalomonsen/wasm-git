@@ -11,7 +11,7 @@ The main purpose of bringing git to the browser, is to enable storage of web app
 ## Compatibility
 
 - **libgit2**: v1.7.1
-- **Emscripten**: Tested with 4.0.13 (compatible with 3.1.74+)
+- **Emscripten**: Pinned to 4.0.23
 - **Node.js**: v18+
 - **Browsers**: Modern browsers with WebAssembly support
 
@@ -31,23 +31,74 @@ Videos showing example applications using wasm-git can bee seen in [this playlis
 
 # Examples
 
-Wasm-git packages are built in two variants: Synchronuous and Asynchronuous. To run the sync version in the browser, a [webworker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) is needed. This is because of the use of synchronous http requests and long running operations that would block if running on the main thread. The sync version has the smallest binary, but need extra client code to communicate with the web worker. When using the sync version in nodejs [worker_threads](https://nodejs.org/api/worker_threads.html) are used, with [Atomics](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics) to exchange data between threads.
+Wasm-git packages are built in three variants: Synchronous, Asynchronous, and OPFS. To run the sync version in the browser, a [webworker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) is needed. This is because of the use of synchronous http requests and long running operations that would block if running on the main thread. The sync version has the smallest binary, but need extra client code to communicate with the web worker. When using the sync version in nodejs [worker_threads](https://nodejs.org/api/worker_threads.html) are used, with [Atomics](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics) to exchange data between threads.
 
 The async version use [Emscripten Asyncify](https://emscripten.org/docs/porting/asyncify.html), which allows calling the Wasm-git functions with `async` / `await`. It can also run from the main thread in the browser. Asyncify increase the binary size because of instrumentation to unwind and rewind WebAssembly state, but makes it possible to have simple client code without exchanging data with worker threads like in the sync version.
+
+The OPFS version uses Emscripten's WASMFS with the OPFS (Origin Private File System) backend. Unlike the async version, it does not use Asyncify — instead it runs synchronously inside a Web Worker (using pthreads internally for the WASMFS OPFS backend). OPFS provides better performance and quota management compared to IDBFS, making it ideal for modern browser-based applications that need persistent storage.
 
 Examples of using Wasm-git can be found in the tests:
 
 - [test](./test/) for NodeJS
 - [test-browser](./test-browser/) for the sync version in the browser with a web worker
 - [test-browser-async](./test-browser-async/) for the async version in the browser
+- [test-browser-opfs](./test-browser-opfs/) for the OPFS version in the browser
 
-The examples shows importing the `lg2.js` / `lg2-async.js` modules from the local build, but you may also access these from releases available at public CDNs.
+The examples shows importing the `lg2.js` / `lg2_async.js` / `lg2_opfs.js` modules from the local build, but you may also access these from releases available at public CDNs.
+
+## OPFS Usage Example
+
+The OPFS version must run in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) because it requires [SharedArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer) (for pthreads), which in turn requires `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`) HTTP headers.
+
+**worker.js** (Web Worker):
+```javascript
+// Import the OPFS-enabled wasm-git module
+const lgMod = await import('./lg2_opfs.js');
+const lg = await lgMod.default();
+const FS = lg.FS;
+
+// WASMFS doesn't pre-create /home/web_user like MEMFS
+try { FS.mkdir('/home'); } catch(e) {}
+try { FS.mkdir('/home/web_user'); } catch(e) {}
+FS.writeFile('/home/web_user/.gitconfig',
+  '[user]\n  name = Your Name\n  email = your.email@example.com');
+
+// Create an OPFS-backed directory using the WASMFS OPFS backend
+const backend = lg._lg2_create_opfs_backend();
+const workingDir = '/opfs';
+// Use ccall to marshal the JS string to a C pointer
+lg.ccall('lg2_create_directory', 'number', ['string', 'number', 'number'],
+         [workingDir, 0o777, backend]);
+
+// Clone using absolute path to avoid CWD ambiguity with WASMFS
+const repoDir = workingDir + '/myrepo';
+lg.callMain(['clone', 'https://github.com/user/repo.git', repoDir]);
+
+// Work around a WASMFS getcwd() bug: create a root symlink so the path
+// returned by getcwd() resolves correctly for libgit2's repo discovery.
+FS.symlink(repoDir, '/myrepo');
+FS.chdir(repoDir);
+
+// Re-set CWD before each callMain since WASMFS may reset it
+FS.chdir(repoDir);
+FS.writeFile('newfile.txt', 'Hello OPFS!');
+FS.chdir(repoDir);
+lg.callMain(['add', 'newfile.txt']);
+FS.chdir(repoDir);
+lg.callMain(['commit', '-m', 'Add new file']);
+FS.chdir(repoDir);
+lg.callMain(['push']);
+
+postMessage({ done: true });
+```
+
+See [test-browser-opfs/worker.js](./test-browser-opfs/worker.js) for a complete working example.
 
 # Building and developing
 
 ## Prerequisites
 
-- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) (tested with version 4.0.13)
+- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) (version 4.0.23)
 - Node.js (v18 or higher)
 - CMake
 - Make
@@ -64,8 +115,8 @@ The examples shows importing the `lg2.js` / `lg2-async.js` modules from the loca
    ```bash
    git clone https://github.com/emscripten-core/emsdk.git
    cd emsdk
-   ./emsdk install latest
-   ./emsdk activate latest
+   ./emsdk install 4.0.23
+   ./emsdk activate 4.0.23
    source ./emsdk_env.sh
    cd ..
    ```
@@ -89,6 +140,12 @@ The examples shows importing the `lg2.js` / `lg2-async.js` modules from the loca
    ./build.sh Release-async # Release async build
    ```
 
+   For OPFS versions (with WASMFS and OPFS support):
+   ```bash
+   ./build.sh Debug-opfs   # Debug OPFS build
+   ./build.sh Release-opfs # Release OPFS build
+   ```
+
 5. **Install npm dependencies**
    ```bash
    npm install
@@ -99,6 +156,7 @@ The examples shows importing the `lg2.js` / `lg2-async.js` modules from the loca
    npm test                  # Run Node.js tests
    npm run test-browser      # Run browser tests (sync version)
    npm run test-browser-async # Run browser tests (async version)
+   npm run test-browser-opfs # Run browser tests (OPFS version)
    ```
 
 ## Development Options
@@ -116,15 +174,36 @@ The [Github actions test pipeline](./.github/workflows/main.yml) shows all the c
 After building, you'll find the following files in `emscriptenbuild/libgit2/examples/`:
 - `lg2.js` and `lg2.wasm` - Synchronous version
 - `lg2_async.js` and `lg2_async.wasm` - Asynchronous version with Asyncify
+- `lg2_opfs.js` and `lg2_opfs.wasm` - OPFS version with WASMFS
 
 These files are also available from npm packages and CDNs for production use.
 
-## Test Status
+## Filesystem Backends
 
-All tests are currently passing:
-- ✅ Node.js tests: 6/6 passing
-- ✅ Browser tests (sync): 18/18 passing
-- ✅ Browser async tests: Should work similarly to sync version
+Wasm-git supports multiple filesystem backends for different use cases:
+
+### MEMFS (Memory File System)
+- **Use case**: In-memory storage, not persisted
+- **Build target**: Default (`./build.sh Release`)
+- **Browser support**: All browsers
+
+### IDBFS (IndexedDB File System)
+- **Use case**: Browser persistent storage using IndexedDB
+- **Build target**: Default (`./build.sh Release`)
+- **Browser support**: All browsers with IndexedDB
+
+### NODEFS (Node.js File System)
+- **Use case**: Node.js native filesystem access
+- **Build target**: Default (`./build.sh Release`)
+- **Platform**: Node.js only
+
+### OPFS (Origin Private File System via WASMFS)
+- **Use case**: Modern browser persistent storage with better performance and quota management
+- **Build target**: OPFS builds (`./build.sh Release-opfs` or `./build.sh Debug-opfs`)
+- **Browser support**: Chrome 86+, Edge 86+, Firefox 111+, Safari 15.2+
+- **Advantages**: Better performance and quota compared to IDBFS
+- **Requirements**: Must run in a Web Worker; server must send `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`) headers to enable SharedArrayBuffer
+- **Note**: Uses Emscripten's WASMFS with OPFS backend and `-pthread` (no Asyncify); `callMain` is synchronous
 
 ## Troubleshooting
 

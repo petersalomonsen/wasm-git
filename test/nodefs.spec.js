@@ -18,7 +18,7 @@ describe('nodefs', function () {
 
         FS.writeFile('/home/web_user/.gitconfig', `
 [safe]
-directory = nodefsclonetest
+directory = *
 
 [user]
 name = Test User

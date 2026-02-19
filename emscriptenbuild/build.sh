@@ -3,6 +3,9 @@
 BUILD_TYPE=Debug
 ASYNCIFY_FLAGS=" -s ASYNCIFY -s 'ASYNCIFY_IMPORTS=[\"emscriptenhttp_do_get\", \"emscriptenhttp_do_read\", \"emscriptenhttp_do_post\"]' "
 POST_JS="--post-js $(pwd)/post.js"
+FS_LIBRARIES="-lidbfs.js -lnodefs.js"
+FS_EXPORTS="'FS','MEMFS','IDBFS','NODEFS','callMain','HEAPU8'"
+EXTRA_CMAKE_DEFINES=""
 
 # Reset in case we've done an '-async' build
 cp ../libgit2patchedfiles/src/transports/emscriptenhttp.c ../libgit2/src/libgit2/transports/emscriptenhttp.c
@@ -30,10 +33,39 @@ elif [ "$1" == "Debug-async" ]; then
     EXTRA_CMAKE_C_FLAGS="$ASYNCIFY_FLAGS"
     POST_JS="--post-js $(pwd)/post-async.js"
     export LG2_OUTPUT_NAME=lg2_async
+# For OPFS builds with WASMFS (runs in a Web Worker, no Asyncify needed)
+elif [ "$1" == "Release-opfs" ]; then
+    BUILD_TYPE=Release
+    # Use sync transport (runs in Web Worker) - don't override with async transport
+    EXTRA_CMAKE_C_FLAGS="-O3 -pthread -sWASMFS -sWASM_BIGINT -sPTHREAD_POOL_SIZE=1"
+    POST_JS="--post-js $(pwd)/post.js"
+    export LG2_OUTPUT_NAME=lg2_opfs
+    # WASMFS doesn't use the old FS libraries
+    FS_LIBRARIES=""
+    FS_EXPORTS="'FS','callMain','HEAPU8','ccall'"
+    EXTRA_CMAKE_DEFINES="-DUSE_THREADS=OFF -DUSE_NSEC=OFF"
+    # Copy OPFS exports helper to examples for WASMFS builds
+    cp ../libgit2patchedfiles/examples/opfs_exports.c ../libgit2/examples/opfs_exports.c
+elif [ "$1" == "Debug-opfs" ]; then
+    BUILD_TYPE=Debug
+    # Use sync transport (runs in Web Worker) - don't override with async transport
+    EXTRA_CMAKE_C_FLAGS="-pthread -sWASMFS -sWASM_BIGINT -sPTHREAD_POOL_SIZE=1"
+    POST_JS="--post-js $(pwd)/post.js"
+    export LG2_OUTPUT_NAME=lg2_opfs
+    # WASMFS doesn't use the old FS libraries
+    FS_LIBRARIES=""
+    FS_EXPORTS="'FS','callMain','HEAPU8','ccall'"
+    EXTRA_CMAKE_DEFINES="-DUSE_THREADS=OFF -DUSE_NSEC=OFF"
+    # Copy OPFS exports helper to examples for WASMFS builds
+    cp ../libgit2patchedfiles/examples/opfs_exports.c ../libgit2/examples/opfs_exports.c
 fi
 
-# Before building, remove any ../libgit2/src/ transports/emscriptenhttp.c left from running setup.sh 
+# Before building, remove any ../libgit2/src/ transports/emscriptenhttp.c left from running setup.sh
 [ -f "../libgit2/src/libgit2/transports/emscriptenhttp-async.c" ] && rm ../libgit2/src/libgit2/transports/emscriptenhttp-async.c
+# Remove OPFS exports for non-OPFS builds to avoid link errors
+if [[ "$1" != *"opfs"* ]]; then
+    [ -f "../libgit2/examples/opfs_exports.c" ] && rm ../libgit2/examples/opfs_exports.c
+fi
 
-emcmake cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_FLAGS="$EXTRA_CMAKE_C_FLAGS --pre-js $(pwd)/pre.js $POST_JS -s \"EXPORTED_RUNTIME_METHODS=['FS','MEMFS','IDBFS','NODEFS','callMain','HEAPU8']\" -sFORCE_FILESYSTEM -sEXPORT_ES6 -s INVOKE_RUN=0 -s ALLOW_MEMORY_GROWTH=1 -s STACK_SIZE=131072 -lidbfs.js -lnodefs.js" -DREGEX_BACKEND=regcomp -DSONAME=OFF -DUSE_HTTPS=OFF -DBUILD_SHARED_LIBS=OFF -DTHREADSAFE=OFF -DUSE_SSH=OFF -DBUILD_CLAR=OFF -DBUILD_EXAMPLES=ON ..
+emcmake cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_FLAGS="$EXTRA_CMAKE_C_FLAGS --pre-js $(pwd)/pre.js $POST_JS -s \"EXPORTED_RUNTIME_METHODS=[$FS_EXPORTS]\" -sFORCE_FILESYSTEM -sEXPORT_ES6 -s INVOKE_RUN=0 -s ALLOW_MEMORY_GROWTH=1 -s STACK_SIZE=131072 $FS_LIBRARIES" -DREGEX_BACKEND=regcomp -DSONAME=OFF -DUSE_HTTPS=OFF -DBUILD_SHARED_LIBS=OFF -DTHREADSAFE=OFF -DUSE_SSH=OFF -DBUILD_CLAR=OFF -DBUILD_EXAMPLES=ON $EXTRA_CMAKE_DEFINES ..
 emmake make lg2

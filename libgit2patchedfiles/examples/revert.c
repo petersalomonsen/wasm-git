@@ -39,7 +39,7 @@ int lg2_revert(git_repository *repo, int argc, char **argv)
 		fprintf(stderr, "failed to lookup rev: %s\n", git_error_last()->message);
 		goto cleanup;
 	}
-	err = git_commit_lookup(&target_commit, repo, revspec.from);
+	err = git_commit_lookup(&target_commit, repo, git_object_id(revspec.from));
 	if (err != 0)
 	{
 		fprintf(stderr, "failed to lookup commit: %s\n", git_error_last()->message);

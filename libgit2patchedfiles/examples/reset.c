@@ -38,7 +38,7 @@ int lg2_reset(git_repository *repo, int argc, char **argv)
 		fprintf(stderr, "failed to lookup rev: %s\n", git_error_last()->message);
 		goto cleanup;
 	}
-	err = git_commit_lookup(&target_commit, repo, revspec.from);
+	err = git_commit_lookup(&target_commit, repo, git_object_id(revspec.from));
 	if (err != 0)
 	{
 		fprintf(stderr, "failed to lookup commit: %s\n", git_error_last()->message);
@@ -56,7 +56,7 @@ int lg2_reset(git_repository *repo, int argc, char **argv)
 			reset_type = GIT_RESET_SOFT;
 		}
 	}
-	err = git_reset(repo, target_commit, reset_type, &checkout_opts);
+	err = git_reset(repo, (const git_object *)target_commit, reset_type, &checkout_opts);
 	if (err != 0)
 	{
 		fprintf(stderr, "reset error: %s\n", git_error_last()->message);
