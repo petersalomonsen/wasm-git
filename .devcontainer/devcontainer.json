@@ -1,4 +1,13 @@
 {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainers/features/python:1": {}
+    },
+    "workspaceMount": "source=wasm-git-volume,target=/workspaces/wasm-git,type=volume",
+    "workspaceFolder": "/workspaces/wasm-git",
+    "initializeCommand": "docker volume create wasm-git-volume 2>/dev/null || true",
+    "onCreateCommand": "sudo chown vscode:vscode /workspaces/wasm-git && if [ ! -d .git ]; then git clone https://github.com/petersalomonsen/wasm-git.git /tmp/wasm-git-clone && cp -a /tmp/wasm-git-clone/. . && rm -rf /tmp/wasm-git-clone; fi",
     "postCreateCommand": "/workspaces/wasm-git/.devcontainer/post-create.sh",
     "customizations": {
         "vscode": {
