@@ -5,6 +5,7 @@ on:
   pull_request:
     branches: [ master ]
 permissions:
+  contents: read
   id-token: write
 jobs:
   default:
@@ -53,7 +54,5 @@ jobs:
             echo "version change is $VERSION->$NEWVERSION, branch is $BRANCH, not publishing, only dry-run"
             npm publish --dry-run
           else
-            npm publish --provenance
+            npm publish --provenance --access public
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
