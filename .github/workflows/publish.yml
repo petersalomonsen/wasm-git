@@ -29,6 +29,7 @@ jobs:
           cd emscriptenbuild
           ./build.sh Release
           ./build.sh Release-async
+          ./build.sh Release-opfs
           cd ..
           set -e
           npm run test

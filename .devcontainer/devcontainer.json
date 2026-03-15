@@ -1,4 +1,9 @@
 {
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainers/features/python:1": {}
+    },
     "postCreateCommand": "/workspaces/wasm-git/.devcontainer/post-create.sh",
     "customizations": {
         "vscode": {

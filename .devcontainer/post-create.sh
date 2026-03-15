@@ -1,4 +1,5 @@
 #!/bin/bash
+sudo apt-get update && sudo apt-get install -y cmake
 curl https://wasmtime.dev/install.sh -sSf | bash
 npm install
 sh setup.sh
@@ -9,6 +10,8 @@ git pull
 ./emsdk install 4.0.23
 ./emsdk activate 4.0.23
 cd ..
+
+echo 'source "/workspaces/wasm-git/emsdk/emsdk_env.sh" 2>/dev/null' >> ~/.bashrc
 
 npx playwright install-deps
 npx playwright install
