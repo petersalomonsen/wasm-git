@@ -1,4 +1,5 @@
 #!/bin/bash
+sudo apt-get update && sudo apt-get install -y cmake
 curl https://wasmtime.dev/install.sh -sSf | bash
 npm install
 sh setup.sh
