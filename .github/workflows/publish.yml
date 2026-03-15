@@ -50,9 +50,11 @@ jobs:
           cp package/lg2_async.* test-browser-async/
           npm run test-browser-async
           BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-          if [[ "$VERSION" = "$NEWVERSION" || "$BRANCH" != "master" ]]; then
+          if [[ "$VERSION" != "$NEWVERSION" && "$BRANCH" = "master" ]]; then
+            npm publish --provenance --access public
+          elif [[ "$VERSION" != "$NEWVERSION" ]]; then
             echo "version change is $VERSION->$NEWVERSION, branch is $BRANCH, not publishing, only dry-run"
             npm publish --dry-run
           else
-            npm publish --provenance --access public
+            echo "version $VERSION is already published, skipping publish"
           fi
