@@ -49,12 +49,10 @@ jobs:
           rm test-browser-async/lg2_async.*
           cp package/lg2_async.* test-browser-async/
           npm run test-browser-async
-          npm publish --dry-run
-          npm publish --provenance --access public
-          # BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-          # if [[ "$VERSION" = "$NEWVERSION" || "$BRANCH" != "master" ]]; then
-          #   echo "version change is $VERSION->$NEWVERSION, branch is $BRANCH, not publishing, only dry-run"
-          #   npm publish --dry-run
-          # else
-          #   npm publish --provenance --access public
-          # fi
+          BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+          if [[ "$VERSION" = "$NEWVERSION" || "$BRANCH" != "master" ]]; then
+            echo "version change is $VERSION->$NEWVERSION, branch is $BRANCH, not publishing, only dry-run"
+            npm publish --dry-run
+          else
+            npm publish --provenance --access public
+          fi
