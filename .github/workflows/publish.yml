@@ -1,21 +1,17 @@
 name: Publish
-# Runs on:
-#   - push to master      → real release (npm publish when the version changed)
-#   - merge_group         → pre-merge dry-run gate (when a PR is queued to merge)
-# It deliberately does NOT run on `pull_request`, so it doesn't rebuild on every
-# push to a PR; instead, with the merge queue enabled and this job marked as a
-# required check, the dry-run runs exactly once right before the PR merges.
-# Day-to-day PR validation is handled by the CI workflow (main.yml).
+# Runs only on pushes to master (actual releases): it builds every variant with
+# the latest Emscripten, runs the node test suite, and publishes to npm when the
+# version changed. Pull requests are validated by the CI workflow (main.yml),
+# which also packs the tarball and runs the browser tests against it.
 on:
   push:
     branches: [ master ]
-  merge_group:
 permissions:
   contents: read
   id-token: write
 jobs:
   default:
-    name: "Publish (build + dry-run)"
+    name: "Publish"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
