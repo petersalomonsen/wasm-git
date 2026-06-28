@@ -22,13 +22,15 @@ jobs:
           npm install
           npx playwright install-deps chromium
           # The publish job's browser tests (test-browser, test-browser-async)
-          # only use chromium, so install just chromium. The playwright CDN
-          # download occasionally stalls right after reaching 100%, hanging the
-          # whole job, so wrap it in a timeout+retry: a stalled attempt is killed
-          # and retried instead of blocking forever.
-          for i in 1 2 3 4 5; do
-            timeout 240 npx playwright install chromium && break
+          # only use chromium, so install just chromium. The playwright install
+          # intermittently hangs right after the download reaches 100%, so wrap
+          # it in a bounded timeout+retry that force-kills (-k) a stalled attempt
+          # and clears any lingering downloader before retrying — it can never
+          # hang the job for more than a few minutes.
+          for i in 1 2 3; do
+            timeout -k 15 120 npx playwright install chromium && break
             echo "playwright install attempt $i stalled or failed; retrying..."
+            pkill -f playwright || true
             sleep 5
           done
           sh setup.sh

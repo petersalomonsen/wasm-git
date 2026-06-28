@@ -96,12 +96,13 @@ jobs:
           npm install
           npx playwright install-deps
           # The loader matrix needs chromium, firefox and webkit. The playwright
-          # CDN download occasionally stalls right after reaching 100%; wrap it
-          # in a timeout+retry so a stalled attempt is killed and retried rather
-          # than hanging the job.
-          for i in 1 2 3 4 5; do
-            timeout 300 npx playwright install && break
+          # install intermittently hangs right after a download reaches 100%, so
+          # wrap it in a bounded timeout+retry that force-kills (-k) a stalled
+          # attempt and clears any lingering downloader before retrying.
+          for i in 1 2 3; do
+            timeout -k 15 180 npx playwright install && break
             echo "playwright install attempt $i stalled or failed; retrying..."
+            pkill -f playwright || true
             sleep 5
           done
           sh setup.sh
