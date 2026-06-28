@@ -95,7 +95,15 @@ jobs:
         run: |
           npm install
           npx playwright install-deps
-          npx playwright install
+          # The loader matrix needs chromium, firefox and webkit. The playwright
+          # CDN download occasionally stalls right after reaching 100%; wrap it
+          # in a timeout+retry so a stalled attempt is killed and retried rather
+          # than hanging the job.
+          for i in 1 2 3 4 5; do
+            timeout 300 npx playwright install && break
+            echo "playwright install attempt $i stalled or failed; retrying..."
+            sleep 5
+          done
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
