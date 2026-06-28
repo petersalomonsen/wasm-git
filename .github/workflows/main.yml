@@ -132,3 +132,63 @@ jobs:
           npm run test-opfs-detect
           npm run test-browser-opfs-noniso
           npm run test-opfs-loader
+  package:
+    name: "Package (tarball browser tests)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Pack the npm tarball and run the browser tests against it
+        run: |
+          npm install
+          npx playwright install-deps
+          # bounded retry (same as the other jobs)
+          for i in 1 2 3; do
+            timeout -k 15 180 npx playwright install && break
+            echo "playwright install attempt $i stalled or failed; retrying..."
+            pkill -f playwright || true
+            sleep 5
+          done
+          sh setup.sh
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install 4.0.23
+          ./emsdk activate 4.0.23
+          cd ..
+          source ./emsdk/emsdk_env.sh
+          # Build every variant (no clean: differently-named outputs coexist, the
+          # same way the publish workflow builds) so preparepublishnpm.sh can copy
+          # them all to the repo root.
+          cd emscriptenbuild
+          ./build.sh Release
+          ./build.sh Release-async
+          ./build.sh Release-opfs
+          ./build.sh Release-opfs-async
+          ./build.sh Release-opfs-jspi
+          cd ..
+          set -e
+          # Produce the exact npm tarball, then run the browser suites against the
+          # EXTRACTED files — that is what consumers install, so this catches
+          # packaging mistakes (missing/renamed/corrupt files) that testing the
+          # raw build outputs would not.
+          ./preparepublishnpm.sh
+          PACKAGEFILE=`npm pack | tail -n 1`
+          rm -rf package && tar -xzf "$PACKAGEFILE"
+          cp package/lg2*.js package/lg2*.wasm package/lg2_opfs_auto.js .
+          # Point every browser test dir at the packed files at the repo root.
+          ln -sf ../lg2.js  test-browser/lg2.js
+          ln -sf ../lg2.wasm test-browser/lg2.wasm
+          ln -sf ../lg2_async.js  test-browser-async/lg2_async.js
+          ln -sf ../lg2_async.wasm test-browser-async/lg2_async.wasm
+          ln -sf ../lg2_opfs.js  test-browser-opfs/lg2_opfs.js
+          ln -sf ../lg2_opfs.wasm test-browser-opfs/lg2_opfs.wasm
+          ln -sf ../../lg2_opfs.js  examples/opfs/lg2_opfs.js
+          ln -sf ../../lg2_opfs.wasm examples/opfs/lg2_opfs.wasm
+          for f in lg2_opfs_auto.js lg2_opfs.js lg2_opfs.wasm lg2_opfs_async.js lg2_opfs_async.wasm lg2_opfs_jspi.js lg2_opfs_jspi.wasm; do
+            ln -sf ../$f test-browser-opfs-noniso/$f
+          done
+          npm run test-browser
+          npm run test-browser-async
+          npm run test-browser-opfs
+          npm run test-opfs-example
+          npm run test-browser-opfs-noniso
+          npm run test-opfs-loader
