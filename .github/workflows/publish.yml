@@ -33,6 +33,8 @@ jobs:
           ./build.sh Release
           ./build.sh Release-async
           ./build.sh Release-opfs
+          ./build.sh Release-opfs-async
+          ./build.sh Release-opfs-jspi
           cd ..
           set -e
           npm run test

@@ -7,6 +7,17 @@ lg2_async.js
 lg2_async.wasm
 lg2_opfs.js
 lg2_opfs.wasm
+lg2_opfs_async.js
+lg2_opfs_async.wasm
+lg2_opfs_jspi.js
+lg2_opfs_jspi.wasm
+test-browser-opfs-noniso/lg2_opfs_auto.js
+test-browser-opfs-noniso/lg2_opfs.js
+test-browser-opfs-noniso/lg2_opfs.wasm
+test-browser-opfs-noniso/lg2_opfs_async.js
+test-browser-opfs-noniso/lg2_opfs_async.wasm
+test-browser-opfs-noniso/lg2_opfs_jspi.js
+test-browser-opfs-noniso/lg2_opfs_jspi.wasm
 .DS_Store
 .vscode
 node_modules

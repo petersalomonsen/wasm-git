@@ -35,14 +35,15 @@ Wasm-git packages are built in three variants: Synchronous, Asynchronous, and OP
 
 The async version use [Emscripten Asyncify](https://emscripten.org/docs/porting/asyncify.html), which allows calling the Wasm-git functions with `async` / `await`. It can also run from the main thread in the browser. Asyncify increase the binary size because of instrumentation to unwind and rewind WebAssembly state, but makes it possible to have simple client code without exchanging data with worker threads like in the sync version.
 
-The OPFS version uses Emscripten's WASMFS with the OPFS (Origin Private File System) backend. Unlike the async version, it does not use Asyncify — instead it runs synchronously inside a Web Worker (using pthreads internally for the WASMFS OPFS backend). OPFS provides better performance and quota management compared to IDBFS, making it ideal for modern browser-based applications that need persistent storage.
+The OPFS version stores data in the browser's [Origin Private File System](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) (OPFS), which provides better performance and quota management than IDBFS. OPFS's directory/metadata operations are **async-only**, so reaching them from synchronous libgit2 code needs an async bridge. wasm-git ships **three** OPFS variants that bridge it differently — see [OPFS variants](#opfs-variants-and-the-runtime-loader) below.
 
 Examples of using Wasm-git can be found in the tests:
 
 - [test](./test/) for NodeJS
 - [test-browser](./test-browser/) for the sync version in the browser with a web worker
 - [test-browser-async](./test-browser-async/) for the async version in the browser
-- [test-browser-opfs](./test-browser-opfs/) for the OPFS version in the browser
+- [test-browser-opfs](./test-browser-opfs/) for the OPFS (pthreads/WASMFS) version in the browser
+- [test-browser-opfs-noniso](./test-browser-opfs-noniso/) for the SAB-free OPFS variants (ASYNCIFY + JSPI) and the runtime loader
 
 The examples shows importing the `lg2.js` / `lg2_async.js` / `lg2_opfs.js` modules from the local build, but you may also access these from releases available at public CDNs.
 
@@ -94,6 +95,69 @@ postMessage({ done: true });
 
 See [test-browser-opfs/worker.js](./test-browser-opfs/worker.js) for a complete working example.
 
+## OPFS variants and the runtime loader
+
+OPFS's open/dir/metadata operations (`getFileHandle`, `getDirectoryHandle`,
+`removeEntry`, `entries`, `createSyncAccessHandle`) are **async-only**. To call
+them from libgit2's synchronous file IO, wasm-git ships three OPFS builds that
+bridge async→sync in different ways:
+
+| Build | File | Bridge | SharedArrayBuffer / cross-origin isolation | wasm size | Relative speed |
+|-------|------|--------|--------------------------------------------|-----------|----------------|
+| **pthreads / WASMFS** | `lg2_opfs.js` | WASMFS OPFS backend blocks a worker thread via `Atomics.wait` | **Required** (COOP/COEP) | ~920 KB | fastest |
+| **JSPI** | `lg2_opfs_jspi.js` | [JSPI](https://developer.mozilla.org/en-US/docs/WebAssembly/JavaScript_interface/Suspending) — native WebAssembly stack switching | Not required | ~805 KB | fast |
+| **ASYNCIFY** | `lg2_opfs_async.js` | [Asyncify](https://emscripten.org/docs/porting/asyncify.html) — wasm rewritten to unwind/rewind its stack | Not required | ~1.5 MB | slower (instrumentation overhead) |
+
+(wasm sizes are for `-O3` release builds and will drift; JSPI is the smallest
+because it needs no stack-rewriting instrumentation, ASYNCIFY the largest for the
+same reason.)
+
+The pthreads build needs `Cross-Origin-Opener-Policy` / `Cross-Origin-Embedder-Policy`
+headers (cross-origin isolation), which some hosts (e.g. NEAR web4) cannot set.
+The **JSPI** and **ASYNCIFY** builds are *SAB-free*: they persist to OPFS by
+suspending the wasm stack across the async OPFS calls, so they run with
+`self.crossOriginIsolated === false`. All three must run inside a **Web Worker**
+(OPFS sync access handles require one).
+
+### Runtime loader (`lg2_opfs_auto.js`)
+
+`lg2_opfs_auto.js` picks the most optimal supported build at runtime and exposes
+a uniform git API over all three. Selection order:
+
+1. **pthreads** when the page is cross-origin isolated
+   (`crossOriginIsolated === true` and `SharedArrayBuffer` exists);
+2. **JSPI** when available (`WebAssembly.Suspending` / `WebAssembly.promising`);
+3. **ASYNCIFY** otherwise (universal fallback).
+
+If OPFS itself is unavailable (`navigator.storage.getDirectory` missing, insecure
+context), `selectOpfsVariant()` returns `null` — fall back to the non-OPFS IDBFS
+build (`lg2.js`).
+
+```javascript
+// inside a Web Worker (type: 'module')
+import { loadOpfsGit, selectOpfsVariant } from './lg2_opfs_auto.js';
+
+console.log(selectOpfsVariant());      // 'pthreads' | 'jspi' | 'asyncify' | null
+
+const git = await loadOpfsGit({ user: 'Your Name', email: 'you@example.com' });
+console.log(git.variant);              // which build was loaded
+
+await git.clone('https://example.com/repo.git', 'repo.git');
+await git.writeFile('repo.git', 'a.txt', 'hello');
+await git.addCommitPush('repo.git', 'a.txt', 'add a.txt');
+console.log(git.readFile('repo.git', 'a.txt'));   // 'hello'
+
+// After a reload, restore an existing repo from OPFS before using it:
+await git.syncRepo('repo.git');
+```
+
+The detection helpers (`detectOpfsEnvironment`, `selectOpfsVariant`) are pure
+functions that accept an `env` object, so they can be unit-tested or forced
+(see [test/opfs-detect.spec.js](./test/opfs-detect.spec.js)).
+
+See [test-browser-opfs-noniso/worker.js](./test-browser-opfs-noniso/worker.js)
+for a complete worker built on the loader.
+
 # Building and developing
 
 ## Prerequisites
@@ -140,10 +204,12 @@ See [test-browser-opfs/worker.js](./test-browser-opfs/worker.js) for a complete 
    ./build.sh Release-async # Release async build
    ```
 
-   For OPFS versions (with WASMFS and OPFS support):
+   For OPFS versions:
    ```bash
-   ./build.sh Debug-opfs   # Debug OPFS build
-   ./build.sh Release-opfs # Release OPFS build
+   ./build.sh Release-opfs       # pthreads / WASMFS OPFS build (needs COOP/COEP)
+   ./build.sh Release-opfs-jspi  # SAB-free OPFS build using JSPI
+   ./build.sh Release-opfs-async # SAB-free OPFS build using ASYNCIFY
+   # (Debug-opfs, Debug-opfs-jspi and Debug-opfs-async also exist)
    ```
 
 5. **Install npm dependencies**
@@ -153,10 +219,13 @@ See [test-browser-opfs/worker.js](./test-browser-opfs/worker.js) for a complete 
 
 6. **Run tests**
    ```bash
-   npm test                  # Run Node.js tests
-   npm run test-browser      # Run browser tests (sync version)
-   npm run test-browser-async # Run browser tests (async version)
-   npm run test-browser-opfs # Run browser tests (OPFS version)
+   npm test                         # Run Node.js tests
+   npm run test-browser             # Run browser tests (sync version)
+   npm run test-browser-async       # Run browser tests (async version)
+   npm run test-browser-opfs        # OPFS pthreads/WASMFS tests (cross-origin isolated)
+   npm run test-browser-opfs-noniso # SAB-free OPFS tests (ASYNCIFY + JSPI, non-isolated)
+   npm run test-opfs-detect         # Loader variant-detection unit tests
+   npm run test-opfs-loader         # Multi-browser loader selection tests (Chromium/Firefox/WebKit)
    ```
 
 ## Development Options
@@ -174,7 +243,13 @@ The [Github actions test pipeline](./.github/workflows/main.yml) shows all the c
 After building, you'll find the following files in `emscriptenbuild/libgit2/examples/`:
 - `lg2.js` and `lg2.wasm` - Synchronous version
 - `lg2_async.js` and `lg2_async.wasm` - Asynchronous version with Asyncify
-- `lg2_opfs.js` and `lg2_opfs.wasm` - OPFS version with WASMFS
+- `lg2_opfs.js` and `lg2_opfs.wasm` - OPFS version with WASMFS + pthreads
+- `lg2_opfs_jspi.js` and `lg2_opfs_jspi.wasm` - SAB-free OPFS version using JSPI
+- `lg2_opfs_async.js` and `lg2_opfs_async.wasm` - SAB-free OPFS version using ASYNCIFY
+
+The runtime loader `lg2_opfs_auto.js` (a hand-written module, not a build output)
+selects the best of the three OPFS builds at runtime — see
+[OPFS variants and the runtime loader](#opfs-variants-and-the-runtime-loader).
 
 These files are also available from npm packages and CDNs for production use.
 
@@ -197,13 +272,16 @@ Wasm-git supports multiple filesystem backends for different use cases:
 - **Build target**: Default (`./build.sh Release`)
 - **Platform**: Node.js only
 
-### OPFS (Origin Private File System via WASMFS)
+### OPFS (Origin Private File System)
 - **Use case**: Modern browser persistent storage with better performance and quota management
-- **Build target**: OPFS builds (`./build.sh Release-opfs` or `./build.sh Debug-opfs`)
-- **Browser support**: Chrome 86+, Edge 86+, Firefox 111+, Safari 15.2+
+- **Browser support**: Chrome 86+, Edge 86+, Firefox 111+, Safari 15.2+ (JSPI variant: Chromium-based browsers with JSPI)
 - **Advantages**: Better performance and quota compared to IDBFS
-- **Requirements**: Must run in a Web Worker; server must send `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`) headers to enable SharedArrayBuffer
-- **Note**: Uses Emscripten's WASMFS with OPFS backend and `-pthread` (no Asyncify); `callMain` is synchronous
+- **Requirements**: Must run in a Web Worker (OPFS sync access handles require one)
+- **Three variants** — see [OPFS variants and the runtime loader](#opfs-variants-and-the-runtime-loader):
+  - **pthreads / WASMFS** (`./build.sh Release-opfs` → `lg2_opfs.js`): synchronous `callMain`; requires cross-origin isolation (`Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp`/`credentialless`) for SharedArrayBuffer.
+  - **JSPI** (`./build.sh Release-opfs-jspi` → `lg2_opfs_jspi.js`): SAB-free; async `callMain`; smallest binary.
+  - **ASYNCIFY** (`./build.sh Release-opfs-async` → `lg2_opfs_async.js`): SAB-free; async `callMain`; universal fallback, largest binary.
+  - `lg2_opfs_auto.js` selects the best supported variant at runtime.
 
 ## Troubleshooting
 
