@@ -1,8 +1,10 @@
 name: Publish
+# Runs only on pushes to master (actual releases). Pull requests are fully
+# validated by the CI workflow (.github/workflows/main.yml), which builds every
+# variant and runs all tests, so the heavy ~25-min publish dry-run is not needed
+# on PRs.
 on:
   push:
-    branches: [ master ]
-  pull_request:
     branches: [ master ]
 permissions:
   contents: read
