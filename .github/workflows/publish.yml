@@ -26,19 +26,6 @@ jobs:
       - name: Default
         run: |
           npm install
-          npx playwright install-deps chromium
-          # The publish job's browser tests (test-browser, test-browser-async)
-          # only use chromium, so install just chromium. The playwright install
-          # intermittently hangs right after the download reaches 100%, so wrap
-          # it in a bounded timeout+retry that force-kills (-k) a stalled attempt
-          # and clears any lingering downloader before retrying — it can never
-          # hang the job for more than a few minutes.
-          for i in 1 2 3; do
-            timeout -k 15 120 npx playwright install chromium && break
-            echo "playwright install attempt $i stalled or failed; retrying..."
-            pkill -f playwright || true
-            sleep 5
-          done
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
@@ -54,20 +41,15 @@ jobs:
           ./build.sh Release-opfs-jspi
           cd ..
           set -e
+          # Node test suite (no browser). The browser/OPFS variants are validated
+          # by the CI workflow (main.yml), which runs on the same master push, so
+          # this job does not install playwright or re-run the browser tests —
+          # that download intermittently hangs and is redundant here.
           npm run test
           export VERSION=`npm view wasm-git dist-tags.latest`
           export NEWVERSION=`node -p "require('./package.json').version"`
           echo $VERSION $NEWVERSION
-          ./preparepublishnpm.sh  
-          PACKAGEFILE=`npm pack | tail -n 1`
-          tar -xvzf $PACKAGEFILE
-          echo "run browser tests with npm package"
-          rm test-browser/lg2.*
-          cp package/lg2.* test-browser/          
-          npm run test-browser
-          rm test-browser-async/lg2_async.*
-          cp package/lg2_async.* test-browser-async/
-          npm run test-browser-async
+          ./preparepublishnpm.sh
           # Only a real push to master publishes; merge_group (pre-merge gate)
           # always does a dry-run, never a real publish.
           if [[ "$VERSION" != "$NEWVERSION" && "$GITHUB_EVENT_NAME" = "push" ]]; then
