@@ -20,8 +20,11 @@ jobs:
       - name: Default
         run: |
           npm install
-          npx playwright install-deps
-          npx playwright install
+          npx playwright install-deps chromium
+          # The publish job's browser tests (test-browser, test-browser-async)
+          # only use chromium; installing just chromium avoids occasional hangs
+          # downloading firefox/webkit from the playwright CDN.
+          npx playwright install chromium
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
