@@ -4,10 +4,13 @@ import { test, expect } from '@playwright/test';
 // for the current browser/context, and that the selected build performs a real
 // clone where OPFS is actually usable.
 //
-// Note: Playwright's headless WebKit does not implement OPFS storage
-// (navigator.storage.getDirectory() throws), even though real Safari does. The
-// variant *selection* (pure feature detection) is asserted for every browser;
-// the functional clone runs only where OPFS storage works.
+// Note on WebKit: Playwright's headless WebKit does not implement OPFS at all
+// (on Linux `navigator.storage.getDirectory` is missing; on macOS it exists but
+// throws when called), even though real Safari supports OPFS. So for WebKit we
+// only assert that the loader *correctly* reports the situation:
+//   - OPFS detected  → 'asyncify' (WebKit has no JSPI)
+//   - OPFS missing   → null       (loader signals the IDBFS fallback)
+// The functional clone runs only where OPFS storage actually works.
 test('loader selects the optimal OPFS build (and clones where OPFS works)', async ({ page }, testInfo) => {
   const { expectedVariant, isolated } = testInfo.project.metadata;
 
@@ -19,21 +22,34 @@ test('loader selects the optimal OPFS build (and clones where OPFS works)', asyn
   const pageIsolated = await page.evaluate(() => self.crossOriginIsolated === true);
   expect(pageIsolated, 'page crossOriginIsolated').toBe(isolated);
 
-  // 1) Variant selection — pure detection, works in every browser.
-  const selected = await page.evaluate(async () => {
-    const { selectOpfsVariant } = await import('/lg2_opfs_auto.js');
-    return selectOpfsVariant(globalThis);
+  // Detect capabilities and the loader's selection (pure feature detection).
+  const { detected, selected } = await page.evaluate(async () => {
+    const { detectOpfsEnvironment, selectOpfsVariant } = await import('/lg2_opfs_auto.js');
+    return { detected: detectOpfsEnvironment(globalThis), selected: selectOpfsVariant(globalThis) };
   });
+
+  // 1) Variant selection.
+  if (!detected.opfsAvailable) {
+    // OPFS entirely unavailable (e.g. Playwright Linux WebKit): the loader must
+    // return null so the caller falls back to the IDBFS build.
+    expect(selected, 'no-OPFS → null (IDBFS fallback)').toBeNull();
+    testInfo.annotations.push({
+      type: 'skip-functional',
+      description: 'OPFS unavailable in this runtime; loader correctly returns null (IDBFS fallback)',
+    });
+    expect(errors, 'no page errors').toEqual([]);
+    return;
+  }
   expect(selected, 'loader-selected variant').toBe(expectedVariant);
 
-  // 2) Functional clone — only where OPFS storage is actually available.
+  // 2) Functional clone — only where OPFS storage is actually usable.
   const opfsUsable = await page.evaluate(async () => {
     try { await navigator.storage.getDirectory(); return true; } catch (e) { return false; }
   });
   if (!opfsUsable) {
     testInfo.annotations.push({
       type: 'skip-functional',
-      description: 'OPFS storage unavailable in this browser/runtime; selection verified only',
+      description: 'OPFS storage present but not usable in this runtime; selection verified only',
     });
     expect(errors, 'no page errors').toEqual([]);
     return;
