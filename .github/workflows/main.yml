@@ -86,3 +86,49 @@ jobs:
           set -e
           npm run test-browser-opfs
           npm run test-opfs-example
+  opfs-sab-free:
+    name: OPFS (SAB-free ASYNCIFY + JSPI + loader)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build SAB-free OPFS variants and test
+        run: |
+          npm install
+          npx playwright install-deps
+          # The loader matrix needs chromium, firefox and webkit. The playwright
+          # install intermittently hangs right after a download reaches 100%, so
+          # wrap it in a bounded timeout+retry that force-kills (-k) a stalled
+          # attempt and clears any lingering downloader before retrying.
+          for i in 1 2 3; do
+            timeout -k 15 180 npx playwright install && break
+            echo "playwright install attempt $i stalled or failed; retrying..."
+            pkill -f playwright || true
+            sleep 5
+          done
+          sh setup.sh
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install 4.0.23
+          ./emsdk activate 4.0.23
+          cd ..
+          source ./emsdk/emsdk_env.sh
+          # Build all three OPFS variants, copying each output to the repo root.
+          # Clean the build tree between variants so changed link flags fully reconfigure.
+          cd emscriptenbuild
+          clean() { rm -rf CMakeCache.txt CMakeFiles libgit2 Makefile cmake_install.cmake; }
+          ./build.sh Release-opfs       && cp libgit2/examples/lg2_opfs.js       libgit2/examples/lg2_opfs.wasm       ../ && clean
+          ./build.sh Release-opfs-async && cp libgit2/examples/lg2_opfs_async.js libgit2/examples/lg2_opfs_async.wasm ../ && clean
+          ./build.sh Release-opfs-jspi  && cp libgit2/examples/lg2_opfs_jspi.js  libgit2/examples/lg2_opfs_jspi.wasm  ../
+          cd ..
+          # Symlink the loader and all variant files into the non-isolated test dir
+          ln -s ../lg2_opfs_auto.js   test-browser-opfs-noniso/lg2_opfs_auto.js
+          ln -s ../lg2_opfs.js        test-browser-opfs-noniso/lg2_opfs.js
+          ln -s ../lg2_opfs.wasm      test-browser-opfs-noniso/lg2_opfs.wasm
+          ln -s ../lg2_opfs_async.js  test-browser-opfs-noniso/lg2_opfs_async.js
+          ln -s ../lg2_opfs_async.wasm test-browser-opfs-noniso/lg2_opfs_async.wasm
+          ln -s ../lg2_opfs_jspi.js   test-browser-opfs-noniso/lg2_opfs_jspi.js
+          ln -s ../lg2_opfs_jspi.wasm test-browser-opfs-noniso/lg2_opfs_jspi.wasm
+          set -e
+          npm run test-opfs-detect
+          npm run test-browser-opfs-noniso
+          npm run test-opfs-loader
