@@ -50,10 +50,22 @@ addToLibrary({
     isOpfsPath(p) {
       return p === OPFS.root || p.startsWith(OPFS.root + '/');
     },
-    // '/opfs/a/b' -> ['a','b']   (relative to the OPFS root directory)
+    // '/opfs/a/b' -> ['a','b']   (relative to the OPFS root directory).
+    // Normalizes the path: '' and '.' segments are dropped and '..' pops the
+    // previous segment, so callers may pass POSIX-relative bits (e.g. libgit2
+    // resolving `init .` to `/opfs/repo/.`) without producing a '.'/'' segment
+    // that OPFS would reject as a directory/file name.
     toParts(p) {
       var rel = p.slice(OPFS.root.length);
-      return rel.split('/').filter((s) => s.length > 0);
+      var parts = [];
+      var segs = rel.split('/');
+      for (var i = 0; i < segs.length; i++) {
+        var seg = segs[i];
+        if (seg === '' || seg === '.') continue;
+        if (seg === '..') { parts.pop(); continue; }
+        parts.push(seg);
+      }
+      return parts;
     },
 
     // ---- low level OPFS handle resolution (async) --------------------------

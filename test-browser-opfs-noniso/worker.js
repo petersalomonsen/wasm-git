@@ -46,6 +46,16 @@ onmessage = async (e) => {
       await git.writeFile(currentRepo, m.filename, m.contents);
       const dircontents = await git.addCommitPush(currentRepo, m.filename, `add ${m.filename}`);
       postMessage({ dircontents });
+    } else if (m.command === 'opfspathnormalization') {
+      // Regression: OPFS paths with '.'/'..' segments (e.g. from libgit2
+      // resolving `init .`) must normalize, not be passed to OPFS as '.'/''
+      // directory names. Exercises OPFS.toParts via opfsWriteFile/opfsReadFile.
+      await git.module.opfsWriteFile('/opfs/pathnorm/./a.txt', 'A');
+      await git.module.opfsWriteFile('/opfs/pathnorm/sub/../b.txt', 'B');
+      postMessage({
+        a: await git.module.opfsReadFile('/opfs/pathnorm/a.txt', 'utf8'),
+        b: await git.module.opfsReadFile('/opfs/pathnorm/b.txt', 'utf8'),
+      });
     } else if (m.command === 'readfile') {
       postMessage({ filename: m.filename, filecontents: git.readFile(currentRepo, m.filename) });
     } else if (m.command === 'deletelocal') {

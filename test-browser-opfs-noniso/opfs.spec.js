@@ -92,6 +92,14 @@ VARIANTS.forEach((variant) => {
       assert.equal(read.filecontents, 'hello world!');
     });
 
+    it('normalizes "." and ".." in OPFS paths (toParts regression)', async () => {
+      await h.cleanOpfs('pathnorm');
+      const r = await h.call('opfspathnormalization');
+      assert.equal(r.a, 'A', "'./' segment must be dropped");
+      assert.equal(r.b, 'B', "'..' segment must pop the previous one");
+      await h.cleanOpfs('pathnorm');
+    });
+
     it('removes the local clone', async () => {
       const del = await h.call('deletelocal');
       assert.equal(del.deleted, 'testrepo.git');
