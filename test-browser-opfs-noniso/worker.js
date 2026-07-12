@@ -56,6 +56,43 @@ onmessage = async (e) => {
         a: await git.module.opfsReadFile('/opfs/pathnorm/a.txt', 'utf8'),
         b: await git.module.opfsReadFile('/opfs/pathnorm/b.txt', 'utf8'),
       });
+    } else if (m.command === 'skeletonrepair') {
+      // Regression: a files-only copy (e.g. an IDBFS -> OPFS migration, or any
+      // zip round-trip) loses git's EMPTY directories, and libgit2 cannot
+      // recreate .git/objects/pack itself — a later fetch then silently fails
+      // to index the downloaded pack. syncRepo must repair the skeleton.
+      const repoName = 'skelrepo';
+      const dir = git.repoDir(repoName);
+      const FS = git.FS;
+      try { await git.removeRepo(repoName); } catch (e) { /* absent */ }
+      try { FS.mkdir(dir); } catch (e) { /* exists */ }
+      FS.chdir(dir);
+      await git.run(['init', '.']);
+      await git.writeFile(repoName, 'a.txt', 'loose objects only');
+      await git.run(['add', 'a.txt']);
+      await git.run(['commit', '-m', 'c1']);
+      // Simulate the files-only migration: snapshot every FILE, delete the
+      // repo, write the files back. Empty directories vanish, exactly like a
+      // real migration.
+      const files = [];
+      const snap = (p) => {
+        for (const entry of FS.readdir(p).filter((x) => x !== '.' && x !== '..')) {
+          const full = `${p}/${entry}`;
+          try { FS.readdir(full); snap(full); }
+          catch (err) { files.push({ rel: full.substring(dir.length + 1), data: FS.readFile(full) }); }
+        }
+      };
+      snap(dir);
+      FS.chdir(git.opfsRoot);
+      await git.removeRepo(repoName);
+      for (const f of files) await git.writeFile(repoName, f.rel, f.data);
+      const exists = (p) => { try { FS.readdir(p); return true; } catch (e) { return false; } };
+      const packDirAfterMigration = exists(`${dir}/.git/objects/pack`);
+      const found = await git.syncRepo(repoName);
+      const packDirAfterSync = exists(`${dir}/.git/objects/pack`);
+      FS.chdir(git.opfsRoot);
+      try { await git.removeRepo(repoName); } catch (e) { /* cleanup */ }
+      postMessage({ skeleton: { found, packDirAfterMigration, packDirAfterSync } });
     } else if (m.command === 'readfile') {
       postMessage({ filename: m.filename, filecontents: git.readFile(currentRepo, m.filename) });
     } else if (m.command === 'deletelocal') {
