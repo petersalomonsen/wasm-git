@@ -179,6 +179,23 @@ export class OpfsGit {
   }
 
   /**
+   * Recreate git's REQUIRED empty directories. Anything that copies a repo
+   * file-by-file (IDBFS→OPFS migrations, zip round-trips, object-store synced
+   * copies) silently loses empty directories — and libgit2 cannot create
+   * `.git/objects/pack` itself: a later fetch downloads the packfile but never
+   * indexes it, failing with "target OID for the reference doesn't exist on
+   * the repository" and no hint of the real cause (diagnosed from a real user
+   * repository that had only ever written loose objects).
+   */
+  _ensureGitSkeleton(dir) {
+    const FS = this.FS;
+    try { FS.readdir(`${dir}/.git/objects`); } catch (e) { return; }
+    for (const sub of ['objects/pack', 'objects/info', 'refs', 'refs/heads', 'refs/tags']) {
+      try { FS.mkdir(`${dir}/.git/${sub}`); } catch (e) { /* exists */ }
+    }
+  }
+
+  /**
    * Make an already-persisted repo available locally.
    * @returns {Promise<boolean>} true if the repo exists in OPFS.
    */
@@ -190,6 +207,7 @@ export class OpfsGit {
         const contents = FS.readdir(dir);
         if (contents.find((f) => f === '.git')) {
           this._createMountSymlink(repoName);
+          this._ensureGitSkeleton(dir);
           FS.chdir(dir);
           return true;
         }
@@ -201,6 +219,7 @@ export class OpfsGit {
     if (!loaded) return false;
     try {
       if (FS.readdir(dir).find((f) => f === '.git')) {
+        this._ensureGitSkeleton(dir);
         FS.chdir(dir);
         return true;
       }

@@ -100,6 +100,17 @@ VARIANTS.forEach((variant) => {
       await h.cleanOpfs('pathnorm');
     });
 
+    it('repairs git skeleton dirs lost by files-only copies (syncRepo)', async () => {
+      await h.cleanOpfs('skelrepo');
+      const r = await h.call('skeletonrepair');
+      assert.isFalse(r.skeleton.packDirAfterMigration,
+        'the files-only migration simulation must lose .git/objects/pack');
+      assert.isTrue(r.skeleton.found, 'syncRepo should find the migrated repo');
+      assert.isTrue(r.skeleton.packDirAfterSync,
+        '.git/objects/pack must be recreated by syncRepo (libgit2 fetch cannot create it)');
+      await h.cleanOpfs('skelrepo');
+    });
+
     it('removes the local clone', async () => {
       const del = await h.call('deletelocal');
       assert.equal(del.deleted, 'testrepo.git');
