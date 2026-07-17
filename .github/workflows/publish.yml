@@ -7,7 +7,7 @@ on:
   push:
     branches: [ master ]
 permissions:
-  contents: read
+  contents: write # create the GitHub release + tag after a successful npm publish
   id-token: write
 jobs:
   default:
@@ -20,6 +20,8 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
       - name: Default
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           npm install
           sh setup.sh
@@ -50,6 +52,10 @@ jobs:
           # always does a dry-run, never a real publish.
           if [[ "$VERSION" != "$NEWVERSION" && "$GITHUB_EVENT_NAME" = "push" ]]; then
             npm publish --provenance --access public
+            # Announce the release on GitHub so watchers/stargazers are notified;
+            # notes are generated from the PRs merged since the previous tag.
+            gh release create "v$NEWVERSION" --target "$GITHUB_SHA" \
+              --title "v$NEWVERSION" --generate-notes
           elif [[ "$VERSION" != "$NEWVERSION" ]]; then
             echo "version change is $VERSION->$NEWVERSION, event is $GITHUB_EVENT_NAME, not publishing, only dry-run"
             npm publish --dry-run
