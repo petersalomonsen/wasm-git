@@ -78,6 +78,8 @@ Complete working examples for every variant are in the test folders:
 - **[githttpserver](https://github.com/petersalomonsen/githttpserver)** — a CORS-enabled git server you can host yourself, plus the browser playground at https://wasm-git.petersalomonsen.com/ showing basic operations: clone, edit, add, commit, push and pull.
 - **[encrypted-git-storage](https://github.com/petersalomonsen/encrypted-git-storage)** — an addon that encrypts and decrypts repositories locally in the browser (AES-256-GCM); the server only ever sees ciphertext. Includes a remote helper for the native git client, so users can clone their own application data — decrypted, with full history — straight to their computer.
 
+Wasm-git is also covered in the book [Building and Deploying WebAssembly Apps](https://bpbonline.com/products/building-and-deploying-webassembly-apps) (BPB Publications, 2025) by wasm-git author Peter Salomonsen.
+
 # OPFS usage example
 
 The pthreads OPFS version must run in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) because it requires [SharedArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer) (for pthreads), which in turn requires `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`) HTTP headers.
