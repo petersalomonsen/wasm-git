@@ -1,55 +1,88 @@
 Wasm-git
 ========
-(Wasm should be pronounced like `awesome` starting with a `W` ).
+([Wasm should be pronounced like `awesome` starting with a `W`](https://youtu.be/C8j_ieOm4vE?t=1644) — as stated in the [WebAssembly Music](https://github.com/petersalomonsen/javascriptmusic) talk at WebAssembly Summit 2020).
 
 ![](https://github.com/petersalomonsen/wasm-git/actions/workflows/main.yml/badge.svg)
 
-GIT for nodejs and the browser using [libgit2](https://libgit2.org/) compiled to WebAssembly with [Emscripten](https://emscripten.org).
+Git for Node.js and the browser, using [libgit2](https://libgit2.org/) compiled to WebAssembly with [Emscripten](https://emscripten.org).
 
-The main purpose of bringing git to the browser, is to enable storage of web application data locally in the users web browser, with the option to synchronize with a remote server.
+Imagine that every app you use kept a complete journal of your data: every change recorded, a backup on your own computer that is truly yours, and synchronization between your devices whenever you want it. Software developers have had exactly this for decades — the tool is called Git. Wasm-git brings that same engine to web applications: store user data locally in the browser with full change history, and push/pull to a remote when — and only when — the user chooses. The application doesn't need to expose any Git terminology: a single "synchronize data" button can do all of it behind the scenes.
 
-## Compatibility
+# Quick start
 
-- **libgit2**: v1.9.4
-- **Emscripten**: Pinned to 6.0.3
-- **Node.js**: v18+
-- **Browsers**: Modern browsers with WebAssembly support
+```bash
+npm install wasm-git
+```
 
-# Demo in the browser
+The package ships prebuilt WebAssembly binaries in several variants (see [Choosing a variant](#choosing-a-variant) below). The easiest one to start with is the **async** variant, which runs on the browser main thread or in Node.js with plain `async`/`await`:
 
-A simple demo in the browser can be found at:
+```javascript
+import initGit from 'wasm-git/lg2_async.js';
 
-https://wasm-git.petersalomonsen.com/
+const lg = await initGit();
+const FS = lg.FS;
 
-**Please do not abuse, this is open for you to test and see the proof of concept**
+// Git needs to know who you are before committing
+FS.writeFile('/home/web_user/.gitconfig',
+  '[user]\nname = Your Name\nemail = you@example.com');
 
-The sources for the demo can be found in the [githttpserver](https://github.com/petersalomonsen/githttpserver) project. It shows basic operations like cloning, edit files, add and commit, push and pull.
+// Create a repository, add a file, and commit
+FS.mkdir('/myrepo');
+FS.chdir('/myrepo');
+await lg.callMain(['init', '.']);
+FS.writeFile('data.json', JSON.stringify({ hello: 'world' }));
+await lg.callMain(['add', 'data.json']);
+await lg.callMain(['commit', '-m', 'first commit']);
+```
 
-# Demo videos
+Cloning and pushing over HTTP works the same way:
 
-Videos showing example applications using wasm-git can bee seen in [this playlist](https://www.youtube.com/watch?v=1Hqy7cVkygU&list=PLv5wm4YuO4Iyx00ifs6xUwIRSFnBI8GZh). Wasm-git is used for local and offline storage of web application data, and for syncing with a remote server.
+```javascript
+await lg.callMain(['clone', 'https://your-git-server.example.com/repo.git', 'repo']);
+FS.chdir('repo');
+// ...edit files, add, commit...
+await lg.callMain(['push']);
+```
 
-# Examples
+When cloning from the browser, the git server must allow cross-origin requests (CORS) — or be served from the same origin. [githttpserver](https://github.com/petersalomonsen/githttpserver) is a ready-made reference server, and its live instance at https://wasm-git.petersalomonsen.com/ is an open playground where you can try cloning, editing, committing and pushing directly in the browser (please don't abuse it — it's there for you to test).
 
-Wasm-git packages are built in three variants: Synchronous, Asynchronous, and OPFS. To run the sync version in the browser, a [webworker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) is needed. This is because of the use of synchronous http requests and long running operations that would block if running on the main thread. The sync version has the smallest binary, but need extra client code to communicate with the web worker. When using the sync version in nodejs [worker_threads](https://nodejs.org/api/worker_threads.html) are used, with [Atomics](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Atomics) to exchange data between threads.
+The files can also be loaded from public CDNs such as unpkg or jsDelivr (e.g. `https://unpkg.com/wasm-git/lg2_async.js`).
 
-The async version use [Emscripten Asyncify](https://emscripten.org/docs/porting/asyncify.html), which allows calling the Wasm-git functions with `async` / `await`. It can also run from the main thread in the browser. Asyncify increase the binary size because of instrumentation to unwind and rewind WebAssembly state, but makes it possible to have simple client code without exchanging data with worker threads like in the sync version.
+# Choosing a variant
 
-The OPFS version stores data in the browser's [Origin Private File System](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) (OPFS), which provides better performance and quota management than IDBFS. OPFS's directory/metadata operations are **async-only**, so reaching them from synchronous libgit2 code needs an async bridge. wasm-git ships **three** OPFS variants that bridge it differently — see [OPFS variants](#opfs-variants-and-the-runtime-loader) below.
+| Variant | File | Where it runs | Persistence | Notes |
+|---------|------|---------------|-------------|-------|
+| **Sync** | `lg2.js` | Browser: **Web Worker only**. Node.js: main thread or [worker_threads](https://nodejs.org/api/worker_threads.html) | MEMFS / [IDBFS](https://emscripten.org/docs/api_reference/Filesystem-API.html#filesystem-api-idbfs) / NODEFS | Smallest binary; synchronous `callMain`. Needs a worker in the browser because of synchronous HTTP and long-running operations. |
+| **Async** | `lg2_async.js` | Browser main thread or worker; Node.js | MEMFS / IDBFS / NODEFS | [Asyncify](https://emscripten.org/docs/porting/asyncify.html) build: `await lg.callMain(...)`. Larger binary, simplest client code. |
+| **OPFS (pthreads)** | `lg2_opfs.js` | Web Worker, requires [cross-origin isolation](https://developer.mozilla.org/en-US/docs/Web/API/Window/crossOriginIsolated) | [OPFS](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) | Fastest OPFS variant; needs COOP/COEP headers for SharedArrayBuffer. |
+| **OPFS (JSPI)** | `lg2_opfs_jspi.js` | Web Worker, no isolation needed | OPFS | SAB-free, smallest OPFS binary; needs a [JSPI](https://developer.mozilla.org/en-US/docs/WebAssembly/JavaScript_interface/Suspending)-capable browser. |
+| **OPFS (ASYNCIFY)** | `lg2_opfs_async.js` | Web Worker, no isolation needed | OPFS | SAB-free universal fallback; largest binary. |
+| **OPFS auto-loader** | `lg2_opfs_auto.js` | Web Worker | OPFS | Picks the best supported OPFS build at runtime and exposes a uniform API — see [OPFS variants and the runtime loader](#opfs-variants-and-the-runtime-loader). |
 
-Examples of using Wasm-git can be found in the tests:
+For browser persistence with the sync/async variants, mount IDBFS and call `FS.syncfs` — or use the OPFS variants, which persist through the filesystem itself with better performance and quota management.
 
-- [test](./test/) for NodeJS
-- [test-browser](./test-browser/) for the sync version in the browser with a web worker
-- [test-browser-async](./test-browser-async/) for the async version in the browser
-- [test-browser-opfs](./test-browser-opfs/) for the OPFS (pthreads/WASMFS) version in the browser
+Complete working examples for every variant are in the test folders:
+
+- [test](./test/) for Node.js
+- [test-browser](./test-browser/) for the sync version in a web worker
+- [test-browser-async](./test-browser-async/) for the async version
+- [test-browser-opfs](./test-browser-opfs/) for the OPFS (pthreads/WASMFS) version
 - [test-browser-opfs-noniso](./test-browser-opfs-noniso/) for the SAB-free OPFS variants (ASYNCIFY + JSPI) and the runtime loader
 
-The examples shows importing the `lg2.js` / `lg2_async.js` / `lg2_opfs.js` modules from the local build, but you may also access these from releases available at public CDNs.
+# Built with wasm-git
 
-## OPFS Usage Example
+- **[Ariz-Portfolio](https://github.com/arizas/Ariz-Portfolio/)** — tracks crypto asset balances, profits and losses on the NEAR protocol blockchain. Uses wasm-git to store portfolio data with full change history on the user's own machine, and lets the user download a complete copy — history included — to their computer. Its optional cloud sync is end-to-end encrypted with [encrypted-git-storage](https://github.com/petersalomonsen/encrypted-git-storage): repositories are encrypted before upload with keys only the user holds.
+- **[Y42](https://www.y42.com/)** — a data pipeline platform (DataOps) where every integration, model and dashboard is versioned in git. In the Data Council talk [Using GIT as a NoSQL Database](https://www.youtube.com/watch?v=mtc-Hwv1aik&t=618s), Y42's founder Hung Dang explains that "under the hood we developed our own git client for the browser using wasm-git, which is a WebAssembly compiled version of libgit2" — and [recommends checking out wasm-git](https://www.youtube.com/watch?v=mtc-Hwv1aik&t=2007s) at the end of the talk.
+- **[WebAssembly Music](https://github.com/petersalomonsen/javascriptmusic)** — a music-making environment in the browser and wasm-git's original driving use case: compositions and instruments are stored and versioned locally, and synchronized with a remote when the user chooses. See it in action in [this video playlist](https://www.youtube.com/watch?v=1Hqy7cVkygU&list=PLv5wm4YuO4Iyx00ifs6xUwIRSFnBI8GZh).
+- **[AutoDev](https://github.com/phodal/auto-dev)** — an AI-native multi-agent development platform built on Kotlin Multiplatform: wasm-git is the git backend for its WebAssembly target, powering clone, log, diff and status in [`GitOperations.wasmJs.kt`](https://github.com/phodal/auto-dev/blob/master/mpp-core/src/wasmJsMain/kotlin/cc/unitmesh/agent/platform/GitOperations.wasmJs.kt).
+- **[githttpserver](https://github.com/petersalomonsen/githttpserver)** — a CORS-enabled git server you can host yourself, plus the browser playground at https://wasm-git.petersalomonsen.com/ showing basic operations: clone, edit, add, commit, push and pull.
+- **[encrypted-git-storage](https://github.com/petersalomonsen/encrypted-git-storage)** — an addon that encrypts and decrypts repositories locally in the browser (AES-256-GCM); the server only ever sees ciphertext. Includes a remote helper for the native git client, so users can clone their own application data — decrypted, with full history — straight to their computer.
 
-The OPFS version must run in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) because it requires [SharedArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer) (for pthreads), which in turn requires `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`) HTTP headers.
+Wasm-git is also covered in the book [Building and Deploying WebAssembly Apps](https://bpbonline.com/products/building-and-deploying-webassembly-apps) (BPB Publications, 2025) by wasm-git author Peter Salomonsen.
+
+# OPFS usage example
+
+The pthreads OPFS version must run in a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) because it requires [SharedArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer) (for pthreads), which in turn requires `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` (or `credentialless`) HTTP headers.
 
 **worker.js** (Web Worker):
 ```javascript
@@ -158,7 +191,44 @@ functions that accept an `env` object, so they can be unit-tested or forced
 See [test-browser-opfs-noniso/worker.js](./test-browser-opfs-noniso/worker.js)
 for a complete worker built on the loader.
 
+# Filesystem backends
+
+Wasm-git supports multiple filesystem backends for different use cases:
+
+### MEMFS (Memory File System)
+- **Use case**: In-memory storage, not persisted
+- **Build target**: Default (`./build.sh Release`)
+- **Browser support**: All browsers
+
+### IDBFS (IndexedDB File System)
+- **Use case**: Browser persistent storage using IndexedDB
+- **Build target**: Default (`./build.sh Release`)
+- **Browser support**: All browsers with IndexedDB
+
+### NODEFS (Node.js File System)
+- **Use case**: Node.js native filesystem access
+- **Build target**: Default (`./build.sh Release`)
+- **Platform**: Node.js only
+
+### OPFS (Origin Private File System)
+- **Use case**: Modern browser persistent storage with better performance and quota management
+- **Browser support**: Chrome 86+, Edge 86+, Firefox 111+, Safari 15.2+ (JSPI variant: Chromium-based browsers with JSPI)
+- **Advantages**: Better performance and quota compared to IDBFS
+- **Requirements**: Must run in a Web Worker (OPFS sync access handles require one)
+- **Three variants** — see [OPFS variants and the runtime loader](#opfs-variants-and-the-runtime-loader):
+  - **pthreads / WASMFS** (`./build.sh Release-opfs` → `lg2_opfs.js`): synchronous `callMain`; requires cross-origin isolation (`Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp`/`credentialless`) for SharedArrayBuffer.
+  - **JSPI** (`./build.sh Release-opfs-jspi` → `lg2_opfs_jspi.js`): SAB-free; async `callMain`; smallest binary.
+  - **ASYNCIFY** (`./build.sh Release-opfs-async` → `lg2_opfs_async.js`): SAB-free; async `callMain`; universal fallback, largest binary.
+  - `lg2_opfs_auto.js` selects the best supported variant at runtime.
+
 # Building and developing
+
+## Compatibility
+
+- **libgit2**: v1.9.4
+- **Emscripten**: Pinned to 6.0.3
+- **Node.js**: v18+
+- **Browsers**: Modern browsers with WebAssembly support
 
 ## Prerequisites
 
@@ -253,64 +323,23 @@ selects the best of the three OPFS builds at runtime — see
 
 These files are also available from npm packages and CDNs for production use.
 
-## Filesystem Backends
-
-Wasm-git supports multiple filesystem backends for different use cases:
-
-### MEMFS (Memory File System)
-- **Use case**: In-memory storage, not persisted
-- **Build target**: Default (`./build.sh Release`)
-- **Browser support**: All browsers
-
-### IDBFS (IndexedDB File System)
-- **Use case**: Browser persistent storage using IndexedDB
-- **Build target**: Default (`./build.sh Release`)
-- **Browser support**: All browsers with IndexedDB
-
-### NODEFS (Node.js File System)
-- **Use case**: Node.js native filesystem access
-- **Build target**: Default (`./build.sh Release`)
-- **Platform**: Node.js only
-
-### OPFS (Origin Private File System)
-- **Use case**: Modern browser persistent storage with better performance and quota management
-- **Browser support**: Chrome 86+, Edge 86+, Firefox 111+, Safari 15.2+ (JSPI variant: Chromium-based browsers with JSPI)
-- **Advantages**: Better performance and quota compared to IDBFS
-- **Requirements**: Must run in a Web Worker (OPFS sync access handles require one)
-- **Three variants** — see [OPFS variants and the runtime loader](#opfs-variants-and-the-runtime-loader):
-  - **pthreads / WASMFS** (`./build.sh Release-opfs` → `lg2_opfs.js`): synchronous `callMain`; requires cross-origin isolation (`Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp`/`credentialless`) for SharedArrayBuffer.
-  - **JSPI** (`./build.sh Release-opfs-jspi` → `lg2_opfs_jspi.js`): SAB-free; async `callMain`; smallest binary.
-  - **ASYNCIFY** (`./build.sh Release-opfs-async` → `lg2_opfs_async.js`): SAB-free; async `callMain`; universal fallback, largest binary.
-  - `lg2_opfs_auto.js` selects the best supported variant at runtime.
-
 ## Troubleshooting
 
-### Common Issues
-
-1. **`writeArrayToMemory` errors**: Make sure you're using a compatible Emscripten version (3.1.74+). The project has been updated to use `Module.HEAPU8.set()` instead.
-
-2. **Build errors**: Ensure Emscripten environment is properly activated:
+1. **Build errors**: Ensure the Emscripten environment is properly activated:
    ```bash
    source /path/to/emsdk/emsdk_env.sh
    ```
 
-3. **Test failures**: Remove any stale test directories before running tests:
+2. **Test failures**: Remove any stale test directories before running tests:
    ```bash
    rm -rf nodefsclonetest
    npm test
    ```
 
-# Emscripten fixes that were needed for making Wasm-git work
+# History
 
-As part of being able to compile libgit2 to WebAssembly and run it in a Javascript environment, some fixes to [Emscripten](https://emscripten.org/) were needed.
-
-Here are the Pull Requests that resolved the issues identified when the first version was developed:
-
-- https://github.com/emscripten-core/emscripten/pull/10095
-- https://github.com/emscripten-core/emscripten/pull/10526
-- https://github.com/emscripten-core/emscripten/pull/10782
-
-for using with `NODEFS` you'll also need https://github.com/emscripten-core/emscripten/pull/10669
-
-All of these pull requests are merged to emscripten master as of 2020-03-29.
-
+Wasm-git started in 2020, and getting libgit2 to run in a JavaScript environment required several fixes to Emscripten itself, all merged upstream that year:
+[#10095](https://github.com/emscripten-core/emscripten/pull/10095),
+[#10526](https://github.com/emscripten-core/emscripten/pull/10526),
+[#10782](https://github.com/emscripten-core/emscripten/pull/10782)
+and [#10669](https://github.com/emscripten-core/emscripten/pull/10669) (NODEFS support).

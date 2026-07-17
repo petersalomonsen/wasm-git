@@ -1,6 +1,6 @@
 {
     "name": "wasm-git",
-    "version": "0.0.16",
+    "version": "0.0.17",
     "type": "module",
     "author": {
         "name": "Peter Salomonsen",
