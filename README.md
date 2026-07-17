@@ -1,6 +1,6 @@
 Wasm-git
 ========
-(Wasm should be pronounced like `awesome` starting with a `W` ).
+([Wasm should be pronounced like `awesome` starting with a `W`](https://youtu.be/C8j_ieOm4vE?t=1644) — as stated in the [WebAssembly Music](https://github.com/petersalomonsen/javascriptmusic) talk at WebAssembly Summit 2020).
 
 ![](https://github.com/petersalomonsen/wasm-git/actions/workflows/main.yml/badge.svg)
 
