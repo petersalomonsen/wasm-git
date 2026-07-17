@@ -13,6 +13,7 @@
  */
 
 #include "common.h"
+#include <git2/sys/errors.h>
 
 /* Define the printf format specifer to use for size_t output */
 #if defined(_MSC_VER) || defined(__MINGW32__)
