@@ -27,8 +27,8 @@ jobs:
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
-          ./emsdk install 4.0.23
-          ./emsdk activate 4.0.23
+          ./emsdk install 6.0.3
+          ./emsdk activate 6.0.3
           cd ..
           source ./emsdk/emsdk_env.sh
           cd emscriptenbuild
@@ -50,8 +50,8 @@ jobs:
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
-          ./emsdk install 4.0.23
-          ./emsdk activate 4.0.23
+          ./emsdk install 6.0.3
+          ./emsdk activate 6.0.3
           cd ..
           source ./emsdk/emsdk_env.sh
           cd emscriptenbuild
@@ -72,8 +72,8 @@ jobs:
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
-          ./emsdk install 4.0.23
-          ./emsdk activate 4.0.23
+          ./emsdk install 6.0.3
+          ./emsdk activate 6.0.3
           cd ..
           source ./emsdk/emsdk_env.sh
           cd emscriptenbuild
@@ -108,8 +108,8 @@ jobs:
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
-          ./emsdk install 4.0.23
-          ./emsdk activate 4.0.23
+          ./emsdk install 6.0.3
+          ./emsdk activate 6.0.3
           cd ..
           source ./emsdk/emsdk_env.sh
           # Build all three OPFS variants, copying each output to the repo root.
@@ -151,8 +151,8 @@ jobs:
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
-          ./emsdk install 4.0.23
-          ./emsdk activate 4.0.23
+          ./emsdk install 6.0.3
+          ./emsdk activate 6.0.3
           cd ..
           source ./emsdk/emsdk_env.sh
           # Build every variant (no clean: differently-named outputs coexist, the

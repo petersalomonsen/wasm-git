@@ -10,8 +10,8 @@ The main purpose of bringing git to the browser, is to enable storage of web app
 
 ## Compatibility
 
-- **libgit2**: v1.7.1
-- **Emscripten**: Pinned to 4.0.23
+- **libgit2**: v1.9.4
+- **Emscripten**: Pinned to 6.0.3
 - **Node.js**: v18+
 - **Browsers**: Modern browsers with WebAssembly support
 
@@ -162,7 +162,7 @@ for a complete worker built on the loader.
 
 ## Prerequisites
 
-- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) (version 4.0.23)
+- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) (version 6.0.3)
 - Node.js (v18 or higher)
 - CMake
 - Make
@@ -179,8 +179,8 @@ for a complete worker built on the loader.
    ```bash
    git clone https://github.com/emscripten-core/emsdk.git
    cd emsdk
-   ./emsdk install 4.0.23
-   ./emsdk activate 4.0.23
+   ./emsdk install 6.0.3
+   ./emsdk activate 6.0.3
    source ./emsdk_env.sh
    cd ..
    ```
@@ -189,7 +189,7 @@ for a complete worker built on the loader.
    ```bash
    ./setup.sh
    ```
-   This script downloads libgit2 v1.7.1 and applies necessary patches for WebAssembly compilation.
+   This script downloads libgit2 v1.9.4 and applies necessary patches for WebAssembly compilation.
 
 4. **Build the project**
    ```bash

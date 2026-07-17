@@ -1,7 +1,7 @@
 name: Publish
 # Runs only on pushes to master (actual releases): it builds every variant with
-# the latest Emscripten, runs the node test suite, and publishes to npm when the
-# version changed. Pull requests are validated by the CI workflow (main.yml),
+# the same pinned Emscripten as CI (main.yml), runs the node test suite, and
+# publishes to npm when the version changed. Pull requests are validated by the CI workflow (main.yml),
 # which also packs the tarball and runs the browser tests against it.
 on:
   push:
@@ -25,8 +25,8 @@ jobs:
           sh setup.sh
           git clone https://github.com/emscripten-core/emsdk.git
           cd emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
+          ./emsdk install 6.0.3
+          ./emsdk activate 6.0.3
           cd ..
           source ./emsdk/emsdk_env.sh
           cd emscriptenbuild
