@@ -36,11 +36,16 @@
         "patch-version": "npm --no-git-tag-version version patch"
     },
     "devDependencies": {
-        "@playwright/test": "^1.58.2",
-        "@web/test-runner": "^0.20.2",
-        "@web/test-runner-playwright": "^0.11.1",
+        "@playwright/test": "^1.62.1",
+        "@web/test-runner": "^1.0.0",
+        "@web/test-runner-playwright": "^1.0.0",
         "cgi": "^0.3.1",
         "chai": "^4.3.7",
-        "mocha": "^10.2.0"
+        "mocha": "^11.8.0"
+    },
+    "overrides": {
+        "puppeteer-core": "^25.8.0",
+        "serialize-javascript": "^7.1.0",
+        "diff": "^8.0.4"
     }
 }

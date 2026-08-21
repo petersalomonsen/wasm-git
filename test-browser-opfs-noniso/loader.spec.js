@@ -4,15 +4,19 @@ import { test, expect } from '@playwright/test';
 // for the current browser/context, and that the selected build performs a real
 // clone where OPFS is actually usable.
 //
-// Note on WebKit: Playwright's headless WebKit does not implement OPFS at all
-// (on Linux `navigator.storage.getDirectory` is missing; on macOS it exists but
-// throws when called), even though real Safari supports OPFS. So for WebKit we
-// only assert that the loader *correctly* reports the situation:
-//   - OPFS detected  → 'asyncify' (WebKit has no JSPI)
-//   - OPFS missing   → null       (loader signals the IDBFS fallback)
-// The functional clone runs only where OPFS storage actually works.
+// Note on WebKit: Playwright's headless WebKit has not always implemented OPFS
+// (on some platforms `navigator.storage.getDirectory` is missing, on others it
+// exists but throws when called), even though real Safari supports OPFS. So
+// where OPFS is missing we only assert that the loader *correctly* reports the
+// situation by returning null, signalling the IDBFS fallback. The functional
+// clone runs only where OPFS storage actually works.
+//
+// Note on JSPI: the expected variant depends on whether the engine ships JSPI,
+// which changes as browsers evolve. Each project declares the variant it should
+// pick (`expectedVariant`) plus, where JSPI is not guaranteed, the variant to
+// expect without it (`variantWithoutJspi`).
 test('loader selects the optimal OPFS build (and clones where OPFS works)', async ({ page }, testInfo) => {
-  const { expectedVariant, isolated } = testInfo.project.metadata;
+  const { expectedVariant, variantWithoutJspi, isolated } = testInfo.project.metadata;
 
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -40,7 +44,9 @@ test('loader selects the optimal OPFS build (and clones where OPFS works)', asyn
     expect(errors, 'no page errors').toEqual([]);
     return;
   }
-  expect(selected, 'loader-selected variant').toBe(expectedVariant);
+  const expected =
+    detected.jspiAvailable || !variantWithoutJspi ? expectedVariant : variantWithoutJspi;
+  expect(selected, 'loader-selected variant').toBe(expected);
 
   // 2) Functional clone — only where OPFS storage is actually usable.
   const opfsUsable = await page.evaluate(async () => {
@@ -76,6 +82,6 @@ test('loader selects the optimal OPFS build (and clones where OPFS works)', asyn
 
   expect(errors, 'no page errors').toEqual([]);
   expect(result.ready.crossOriginIsolated, 'reported crossOriginIsolated').toBe(isolated);
-  expect(result.ready.variant, 'selected variant (worker)').toBe(expectedVariant);
+  expect(result.ready.variant, 'selected variant (worker)').toBe(expected);
   expect(result.dircontents, 'clone produced a .git directory').toContain('.git');
 });
