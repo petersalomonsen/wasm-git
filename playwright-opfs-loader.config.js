@@ -6,8 +6,12 @@ import { defineConfig, devices } from '@playwright/test';
 // Coverage matrix:
 //   chromium-isolated (COOP/COEP, :7780) → pthreads (lg2_opfs),     isolated=true
 //   chromium          (no COOP/COEP, :7781) → jspi  (lg2_opfs_jspi), isolated=false
-//   firefox           (no COOP/COEP, :7781) → asyncify (no JSPI)
-//   webkit            (no COOP/COEP, :7781) → asyncify (no JSPI)
+//   firefox           (no COOP/COEP, :7781) → jspi  (lg2_opfs_jspi), isolated=false
+//   webkit            (no COOP/COEP, :7781) → jspi  (lg2_opfs_jspi), isolated=false
+//
+// Firefox and WebKit shipped JSPI (WebAssembly.Suspending/promising) after this
+// suite was written, so they now select the JSPI build too. Engines without it
+// must still land on ASYNCIFY, which `variantWithoutJspi` expresses.
 export default defineConfig({
   testMatch: 'test-browser-opfs-noniso/loader.spec.js',
   timeout: 120000,
@@ -38,12 +42,12 @@ export default defineConfig({
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'], baseURL: 'http://localhost:7781' },
-      metadata: { expectedVariant: 'asyncify', isolated: false },
+      metadata: { expectedVariant: 'jspi', variantWithoutJspi: 'asyncify', isolated: false },
     },
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'], baseURL: 'http://localhost:7781' },
-      metadata: { expectedVariant: 'asyncify', isolated: false },
+      metadata: { expectedVariant: 'jspi', variantWithoutJspi: 'asyncify', isolated: false },
     },
   ],
   webServer: {
