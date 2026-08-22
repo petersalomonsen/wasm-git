@@ -24,7 +24,7 @@
         "README.md"
     ],
     "scripts": {
-        "test": "mocha test/**/*.spec.js",
+        "test": "mocha --exit test/**/*.spec.js",
         "test-browser": "wtr test-browser/**/*.spec.js",
         "test-browser-watch": "wtr test-browser/**/*.spec.js --watch",
         "test-browser-async": "wtr test-browser-async/**/*.spec.js",
@@ -32,7 +32,7 @@
         "test-browser-opfs-noniso": "wtr --config web-test-runner-opfs-noniso.config.js",
         "test-opfs-example": "playwright test --config playwright-opfs.config.js",
         "test-opfs-loader": "playwright test --config playwright-opfs-loader.config.js",
-        "test-opfs-detect": "mocha test/opfs-detect.spec.js",
+        "test-opfs-detect": "mocha --exit test/opfs-detect.spec.js",
         "patch-version": "npm --no-git-tag-version version patch"
     },
     "devDependencies": {
