@@ -8,6 +8,7 @@ jobs:
   detectonly:
     name: Detect use of .only
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
       - name: Detect use of .only
@@ -17,6 +18,7 @@ jobs:
   default:
     name: "Default"
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v4
@@ -43,6 +45,7 @@ jobs:
   asyncify:
     name: Asyncify
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v4
@@ -68,6 +71,7 @@ jobs:
   opfs:
     name: OPFS
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v4
@@ -98,6 +102,7 @@ jobs:
   opfs-sab-free:
     name: OPFS (SAB-free ASYNCIFY + JSPI + loader)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v4
@@ -147,6 +152,7 @@ jobs:
   package:
     name: "Package (tarball browser tests)"
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v4
