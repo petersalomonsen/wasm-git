@@ -21,6 +21,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Default
         run: |
           npm install
@@ -45,6 +48,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Default
         run: |
           npm install
@@ -68,6 +74,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: OPFS Build and Test
         run: |
           npm install
@@ -96,6 +105,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Build SAB-free OPFS variants and test
         run: |
           npm install
@@ -143,6 +155,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Pack the npm tarball and run the browser tests against it
         run: |
           npm install
