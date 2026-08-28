@@ -68,6 +68,34 @@ jobs:
           cd ..
           set -e
           npm run test-browser-async
+  workerfs:
+    name: WORKERFS
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: WORKERFS Build and Test
+        run: |
+          npm install
+          npx playwright install-deps
+          npx playwright install
+          sh setup.sh
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install 6.0.3
+          ./emsdk activate 6.0.3
+          cd ..
+          source ./emsdk/emsdk_env.sh
+          cd emscriptenbuild
+          ./build.sh Release-workerfs
+          cd ..
+          ln -s ../emscriptenbuild/libgit2/examples/lg2_workerfs.js test-browser-workerfs/lg2_workerfs.js
+          ln -s ../emscriptenbuild/libgit2/examples/lg2_workerfs.wasm test-browser-workerfs/lg2_workerfs.wasm
+          set -e
+          npm run test-browser-workerfs
   opfs:
     name: OPFS
     runs-on: ubuntu-latest
@@ -182,6 +210,7 @@ jobs:
           cd emscriptenbuild
           ./build.sh Release
           ./build.sh Release-async
+          ./build.sh Release-workerfs
           ./build.sh Release-opfs
           ./build.sh Release-opfs-async
           ./build.sh Release-opfs-jspi
@@ -200,6 +229,8 @@ jobs:
           ln -sf ../lg2.wasm test-browser/lg2.wasm
           ln -sf ../lg2_async.js  test-browser-async/lg2_async.js
           ln -sf ../lg2_async.wasm test-browser-async/lg2_async.wasm
+          ln -sf ../lg2_workerfs.js  test-browser-workerfs/lg2_workerfs.js
+          ln -sf ../lg2_workerfs.wasm test-browser-workerfs/lg2_workerfs.wasm
           ln -sf ../lg2_opfs.js  test-browser-opfs/lg2_opfs.js
           ln -sf ../lg2_opfs.wasm test-browser-opfs/lg2_opfs.wasm
           ln -sf ../../lg2_opfs.js  examples/opfs/lg2_opfs.js
@@ -209,6 +240,7 @@ jobs:
           done
           npm run test-browser
           npm run test-browser-async
+          npm run test-browser-workerfs
           npm run test-browser-opfs
           npm run test-opfs-example
           npm run test-browser-opfs-noniso

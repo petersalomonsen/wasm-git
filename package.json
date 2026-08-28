@@ -20,6 +20,8 @@
         "lg2_opfs_async.wasm",
         "lg2_opfs_jspi.js",
         "lg2_opfs_jspi.wasm",
+        "lg2_workerfs.js",
+        "lg2_workerfs.wasm",
         "lg2_opfs_auto.js",
         "README.md"
     ],
