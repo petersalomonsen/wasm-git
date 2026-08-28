@@ -100,6 +100,17 @@ elif [ "$1" == "Debug-opfs-jspi" ]; then
     FS_LIBRARIES=""
     FS_EXPORTS="'FS','callMain','HEAPU8','ccall'"
     EXTRA_CMAKE_DEFINES="-DUSE_THREADS=OFF -DUSE_NSEC=OFF"
+elif [ "$1" == "Release-workerfs" ]; then
+    BUILD_TYPE=Release
+    EXTRA_CMAKE_C_FLAGS="-Oz"
+    FS_LIBRARIES="-lworkerfs.js -lmemfs.js"
+    FS_EXPORTS="'FS','MEMFS','WORKERFS','callMain','HEAPU8'"
+    export LG2_OUTPUT_NAME=lg2_workerfs
+elif [ "$1" == "Debug-workerfs" ]; then
+    BUILD_TYPE=Debug
+    FS_LIBRARIES="-lworkerfs.js -lmemfs.js"
+    FS_EXPORTS="'FS','MEMFS','WORKERFS','callMain','HEAPU8'"
+    export LG2_OUTPUT_NAME=lg2_workerfs
 fi
 
 # Before building, remove any ../libgit2/src/ transports/emscriptenhttp.c left from running setup.sh

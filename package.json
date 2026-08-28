@@ -27,6 +27,7 @@
         "test": "mocha --exit test/**/*.spec.js",
         "test-browser": "wtr test-browser/**/*.spec.js",
         "test-browser-watch": "wtr test-browser/**/*.spec.js --watch",
+        "test-browser-workerfs": "wtr --config web-test-runner-workerfs.config.js",
         "test-browser-async": "wtr test-browser-async/**/*.spec.js",
         "test-browser-opfs": "wtr --config web-test-runner-opfs.config.js",
         "test-browser-opfs-noniso": "wtr --config web-test-runner-opfs-noniso.config.js",
