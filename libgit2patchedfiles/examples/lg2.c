@@ -72,6 +72,7 @@ int main(int argc, char **argv)
 	struct args_info args = ARGS_INFO_INIT;
 	git_repository *repo = NULL;
 	const char *git_dir = NULL;
+	const char *index_file = NULL;
 	int return_code = 1;
 	size_t i;
 
@@ -87,6 +88,8 @@ int main(int argc, char **argv)
 			/* non-arg */
 			break;
 		} else if (optional_str_arg(&git_dir, &args, "--git-dir", ".git")) {
+			continue;
+		} else if (optional_str_arg(&index_file, &args, "--index-file", NULL)) {
 			continue;
 		} else if (match_arg_separator(&args)) {
 			break;
@@ -110,6 +113,14 @@ int main(int argc, char **argv)
 		if (commands[i].requires_repo) {
 			check_lg2(git_repository_open_ext(&repo, git_dir, 0, NULL),
 				  "Unable to open repository '%s'", git_dir);
+
+			// redirect the index e.g. onto a writable MEMFS path
+			if (index_file) {
+				git_index *index = NULL;
+				check_lg2(git_index_open(&index, index_file),
+					  "Unable to open index '%s'", index_file);
+				git_repository_set_index(repo, index);
+			}
 		}
 
 		return_code = run_command(commands[i].fn, repo, args);

@@ -11,6 +11,10 @@ lg2_opfs_async.js
 lg2_opfs_async.wasm
 lg2_opfs_jspi.js
 lg2_opfs_jspi.wasm
+lg2_workerfs.js
+lg2_workerfs.wasm
+test-browser-workerfs/lg2_workerfs.js
+test-browser-workerfs/lg2_workerfs.wasm
 test-browser-opfs-noniso/lg2_opfs_auto.js
 test-browser-opfs-noniso/lg2_opfs.js
 test-browser-opfs-noniso/lg2_opfs.wasm

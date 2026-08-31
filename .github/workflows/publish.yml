@@ -35,6 +35,7 @@ jobs:
           cd emscriptenbuild
           ./build.sh Release
           ./build.sh Release-async
+          ./build.sh Release-workerfs
           ./build.sh Release-opfs
           ./build.sh Release-opfs-async
           ./build.sh Release-opfs-jspi

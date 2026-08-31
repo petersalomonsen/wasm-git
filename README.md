@@ -53,6 +53,7 @@ The files can also be loaded from public CDNs such as unpkg or jsDelivr (e.g. `h
 | Variant | File | Where it runs | Persistence | Notes |
 |---------|------|---------------|-------------|-------|
 | **Sync** | `lg2.js` | Browser: **Web Worker only**. Node.js: main thread or [worker_threads](https://nodejs.org/api/worker_threads.html) | MEMFS / [IDBFS](https://emscripten.org/docs/api_reference/Filesystem-API.html#filesystem-api-idbfs) / NODEFS | Smallest binary; synchronous `callMain`. Needs a worker in the browser because of synchronous HTTP and long-running operations. |
+| **Sync (WORKERFS)** | `lg2_workerfs.js` | Browser: **Web Worker only** | MEMFS / WORKERFS (read-only mounts of Blobs/Files) | Minimal sync build with only MEMFS + WORKERFS (`./build.sh Release-workerfs`); no IDBFS/NODEFS. Mount read-only mirrors (e.g. a folder picked with the File System Access API) without copying, and keep the git index writable with lg2's `--index-file` flag. |
 | **Async** | `lg2_async.js` | Browser main thread or worker; Node.js | MEMFS / IDBFS / NODEFS | [Asyncify](https://emscripten.org/docs/porting/asyncify.html) build: `await lg.callMain(...)`. Larger binary, simplest client code. |
 | **OPFS (pthreads)** | `lg2_opfs.js` | Web Worker, requires [cross-origin isolation](https://developer.mozilla.org/en-US/docs/Web/API/Window/crossOriginIsolated) | [OPFS](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) | Fastest OPFS variant; needs COOP/COEP headers for SharedArrayBuffer. |
 | **OPFS (JSPI)** | `lg2_opfs_jspi.js` | Web Worker, no isolation needed | OPFS | SAB-free, smallest OPFS binary; needs a [JSPI](https://developer.mozilla.org/en-US/docs/WebAssembly/JavaScript_interface/Suspending)-capable browser. |
@@ -65,6 +66,7 @@ Complete working examples for every variant are in the test folders:
 
 - [test](./test/) for Node.js
 - [test-browser](./test-browser/) for the sync version in a web worker
+- [test-browser-workerfs](./test-browser-workerfs/) for the WORKERFS sync variant
 - [test-browser-async](./test-browser-async/) for the async version
 - [test-browser-opfs](./test-browser-opfs/) for the OPFS (pthreads/WASMFS) version
 - [test-browser-opfs-noniso](./test-browser-opfs-noniso/) for the SAB-free OPFS variants (ASYNCIFY + JSPI) and the runtime loader
@@ -209,6 +211,12 @@ Wasm-git supports multiple filesystem backends for different use cases:
 - **Use case**: Node.js native filesystem access
 - **Build target**: Default (`./build.sh Release`)
 - **Platform**: Node.js only
+
+### WORKERFS (Web Worker File System)
+- **Use case**: Read-only mounts of Blobs/Files (e.g. a folder picked with the File System Access API) without copying their contents into memory
+- **Build target**: `./build.sh Release-workerfs` → `lg2_workerfs.js` (links only `-lworkerfs.js -lmemfs.js`; no IDBFS/NODEFS)
+- **Browser support**: Web Workers only (uses `FileReaderSync`)
+- **Note**: Mounts are read-only. Redirect the git index to MEMFS with lg2's `--index-file <path>` argument — passed before the git command like `--git-dir`, e.g. `lg.callMain(['--index-file', '/gitindex', 'status'])` — so index-writing commands work against a read-only repository mount.
 
 ### OPFS (Origin Private File System)
 - **Use case**: Modern browser persistent storage with better performance and quota management
