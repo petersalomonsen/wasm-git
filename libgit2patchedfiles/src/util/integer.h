@@ -53,7 +53,7 @@ GIT_INLINE(int) git__is_int(int64_t p)
 #if (__has_builtin(__builtin_add_overflow) || \
      (defined(__GNUC__) && (__GNUC__ >= 5)))
 
-# if defined(__EMSCRIPTEN__)
+# if defined(__EMSCRIPTEN__) || defined(__wasi__)
 /* Emscripten/WebAssembly: size_t is unsigned long */
 #  define git__add_sizet_overflow(out, one, two) \
      __builtin_uaddl_overflow(one, two, out)

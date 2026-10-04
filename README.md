@@ -221,6 +221,28 @@ Wasm-git supports multiple filesystem backends for different use cases:
   - **ASYNCIFY** (`./build.sh Release-opfs-async` → `lg2_opfs_async.js`): SAB-free; async `callMain`; universal fallback, largest binary.
   - `lg2_opfs_auto.js` selects the best supported variant at runtime.
 
+# WASI component (experimental)
+
+Besides the Emscripten builds for JavaScript hosts, `lg2` can be built as a
+[WASI 0.2](https://wasi.dev) component that needs no JavaScript at all: files go
+through `wasi:filesystem` and HTTP(S) through `wasi:http`, so it runs in any
+component runtime, such as [Wasmtime](https://wasmtime.dev), and the host decides
+which directories and network access it gets.
+
+```bash
+./setup.sh
+./wasibuild/build.sh        # downloads the pinned wasi-sdk and wit-bindgen on first run
+
+# mount ./work as the guest's root directory and allow outgoing HTTP
+wasmtime run -S http --dir ./work::/ --env HOME=/ \
+  wasibuild/examples/lg2.wasm clone https://github.com/octocat/Hello-World.git hello
+```
+
+The component is not part of the npm package. It currently exposes the `lg2`
+command line (`wasi:cli/run`), and HTTP authentication and redirects are not
+supported yet. `npm run test-wasi` runs [test-wasi](./test-wasi/) against the
+build in Wasmtime.
+
 # Building and developing
 
 ## Compatibility
@@ -322,6 +344,9 @@ selects the best of the three OPFS builds at runtime — see
 [OPFS variants and the runtime loader](#opfs-variants-and-the-runtime-loader).
 
 These files are also available from npm packages and CDNs for production use.
+
+The WASI component build (`wasibuild/build.sh`) writes `wasibuild/examples/lg2.wasm` —
+see [WASI component (experimental)](#wasi-component-experimental).
 
 ## Troubleshooting
 

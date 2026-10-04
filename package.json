@@ -33,6 +33,7 @@
         "test-opfs-example": "playwright test --config playwright-opfs.config.js",
         "test-opfs-loader": "playwright test --config playwright-opfs-loader.config.js",
         "test-opfs-detect": "mocha --exit test/opfs-detect.spec.js",
+        "test-wasi": "mocha --exit test-wasi/**/*.spec.js",
         "patch-version": "npm --no-git-tag-version version patch"
     },
     "devDependencies": {

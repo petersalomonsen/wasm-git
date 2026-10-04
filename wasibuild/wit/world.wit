@@ -1,0 +1,7 @@
+// The interfaces lg2 imports on top of what wasi-libc already uses.
+// C bindings are generated from this world by build.sh.
+package wasmgit:lg2;
+
+world lg2-http {
+  import wasi:http/outgoing-handler@0.2.12;
+}
