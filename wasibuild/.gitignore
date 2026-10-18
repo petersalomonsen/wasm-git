@@ -1,0 +1,13 @@
+# build tree (configured in this directory) and downloaded toolchain
+/CMake*
+/cmake_install.cmake
+/Makefile
+/src
+/deps
+/examples
+/include
+/libgit2*
+/bindings
+/tools
+/gen_headers
+/cmake

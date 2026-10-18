@@ -68,6 +68,24 @@ jobs:
           cd ..
           set -e
           npm run test-browser-async
+  wasi:
+    name: WASI component
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build the WASI component and test it in Wasmtime
+        run: |
+          npm install
+          sh setup.sh
+          ./wasibuild/build.sh
+          curl -sSf https://wasmtime.dev/install.sh | bash -s -- --version v46.0.1
+          export PATH=$HOME/.wasmtime/bin:$PATH
+          set -e
+          npm run test-wasi
   opfs:
     name: OPFS
     runs-on: ubuntu-latest

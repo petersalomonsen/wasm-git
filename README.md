@@ -8,6 +8,12 @@ Git for Node.js and the browser, using [libgit2](https://libgit2.org/) compiled 
 
 Imagine that every app you use kept a complete journal of your data: every change recorded, a backup on your own computer that is truly yours, and synchronization between your devices whenever you want it. Software developers have had exactly this for decades — the tool is called Git. Wasm-git brings that same engine to web applications: store user data locally in the browser with full change history, and push/pull to a remote when — and only when — the user chooses. The application doesn't need to expose any Git terminology: a single "synchronize data" button can do all of it behind the scenes.
 
+# Scope
+
+Wasm-git is a port of [libgit2](https://libgit2.org/) to WebAssembly, not a new git library. You use it through `lg2`, libgit2's example command-line program, which this repo extends so it resembles the `git` command line: `lg.callMain(['clone', url, 'repo'])` in JavaScript, or `lg2 clone url repo` in a WASI runtime. Every build variant exposes the same commands, and only where files and network come from differs.
+
+This is deliberate. Git's command language is already designed, documented and widely known, so wasm-git adds no API of its own to learn or maintain, and it follows libgit2 upstream closely. `lg2` covers a subset of git's commands and options; missing ones are added by extending the examples in [libgit2patchedfiles](./libgit2patchedfiles/examples/). If you need a programmatic API, build it on top of these commands or compile libgit2 to wasm with your own bindings.
+
 # Quick start
 
 ```bash
@@ -221,6 +227,28 @@ Wasm-git supports multiple filesystem backends for different use cases:
   - **ASYNCIFY** (`./build.sh Release-opfs-async` → `lg2_opfs_async.js`): SAB-free; async `callMain`; universal fallback, largest binary.
   - `lg2_opfs_auto.js` selects the best supported variant at runtime.
 
+# WASI component (experimental)
+
+Besides the Emscripten builds for JavaScript hosts, `lg2` can be built as a
+[WASI 0.2](https://wasi.dev) component that needs no JavaScript at all: files go
+through `wasi:filesystem` and HTTP(S) through `wasi:http`, so it runs in any
+component runtime, such as [Wasmtime](https://wasmtime.dev), and the host decides
+which directories and network access it gets.
+
+```bash
+./setup.sh
+./wasibuild/build.sh        # downloads the pinned wasi-sdk and wit-bindgen on first run
+
+# mount ./work as the guest's root directory and allow outgoing HTTP
+wasmtime run -S http --dir ./work::/ --env HOME=/ \
+  wasibuild/examples/lg2.wasm clone https://github.com/octocat/Hello-World.git hello
+```
+
+The component is not part of the npm package. It currently exposes the `lg2`
+command line (`wasi:cli/run`), and HTTP authentication and redirects are not
+supported yet. `npm run test-wasi` runs [test-wasi](./test-wasi/) against the
+build in Wasmtime.
+
 # Building and developing
 
 ## Compatibility
@@ -322,6 +350,9 @@ selects the best of the three OPFS builds at runtime — see
 [OPFS variants and the runtime loader](#opfs-variants-and-the-runtime-loader).
 
 These files are also available from npm packages and CDNs for production use.
+
+The WASI component build (`wasibuild/build.sh`) writes `wasibuild/examples/lg2.wasm` —
+see [WASI component (experimental)](#wasi-component-experimental).
 
 ## Troubleshooting
 
