@@ -5,3 +5,8 @@ package wasmgit:lg2;
 world lg2-http {
   import wasi:http/outgoing-handler@0.2.12;
 }
+
+// The git smart HTTP server example (build.sh server).
+world git-server {
+  export wasi:http/incoming-handler@0.2.12;
+}
