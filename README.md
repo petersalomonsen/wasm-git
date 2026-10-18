@@ -8,6 +8,12 @@ Git for Node.js and the browser, using [libgit2](https://libgit2.org/) compiled 
 
 Imagine that every app you use kept a complete journal of your data: every change recorded, a backup on your own computer that is truly yours, and synchronization between your devices whenever you want it. Software developers have had exactly this for decades — the tool is called Git. Wasm-git brings that same engine to web applications: store user data locally in the browser with full change history, and push/pull to a remote when — and only when — the user chooses. The application doesn't need to expose any Git terminology: a single "synchronize data" button can do all of it behind the scenes.
 
+# Scope
+
+Wasm-git is a port of [libgit2](https://libgit2.org/) to WebAssembly, not a new git library. You use it through `lg2`, libgit2's example command-line program, which this repo extends so it resembles the `git` command line: `lg.callMain(['clone', url, 'repo'])` in JavaScript, or `lg2 clone url repo` in a WASI runtime. Every build variant exposes the same commands, and only where files and network come from differs.
+
+This is deliberate. Git's command language is already designed, documented and widely known, so wasm-git adds no API of its own to learn or maintain, and it follows libgit2 upstream closely. `lg2` covers a subset of git's commands and options; missing ones are added by extending the examples in [libgit2patchedfiles](./libgit2patchedfiles/examples/). If you need a programmatic API, build it on top of these commands or compile libgit2 to wasm with your own bindings.
+
 # Quick start
 
 ```bash

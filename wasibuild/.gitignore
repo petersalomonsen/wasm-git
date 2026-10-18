@@ -9,3 +9,5 @@
 /libgit2*
 /bindings
 /tools
+/gen_headers
+/cmake
