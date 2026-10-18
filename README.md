@@ -249,6 +249,18 @@ command line (`wasi:cli/run`), and HTTP authentication and redirects are not
 supported yet. `npm run test-wasi` runs [test-wasi](./test-wasi/) against the
 build in Wasmtime.
 
+[wasibuild/server](./wasibuild/server/) is an example in the other direction: a
+git smart HTTP server built on libgit2, exported as `wasi:http/incoming-handler`
+and serving bare repositories from a mounted directory (protocol v0, no auth):
+
+```bash
+./wasibuild/build.sh server
+wasmtime serve -S cli --dir ./repos::/repos wasibuild/server-build/gitserver.wasm
+git clone http://localhost:8080/myrepo.git    # serves ./repos/myrepo.git
+```
+
+Setting `GIT_SERVER=wasm` makes the test suites use it instead of `git http-backend`.
+
 # Building and developing
 
 ## Compatibility

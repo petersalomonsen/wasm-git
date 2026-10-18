@@ -1,4 +1,4 @@
-#ifdef __wasi__
+#if defined(__wasi__) && !defined(GIT_WASI_NO_HTTP_CLIENT)
 
 /*
  * Smart HTTP subtransport on top of wasi:http/outgoing-handler (WASI 0.2),

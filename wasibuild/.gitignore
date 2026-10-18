@@ -9,5 +9,6 @@
 /libgit2*
 /bindings
 /tools
+/server-build
 /gen_headers
 /cmake

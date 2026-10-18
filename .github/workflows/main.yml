@@ -86,6 +86,51 @@ jobs:
           export PATH=$HOME/.wasmtime/bin:$PATH
           set -e
           npm run test-wasi
+  wasi-server:
+    name: Test suites against the WASI git server
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Build clients and the WASI git server, run the suites against it
+        run: |
+          npm install
+          npx playwright install-deps
+          for i in 1 2 3; do
+            timeout -k 15 180 npx playwright install chromium && break
+            echo "playwright install attempt $i stalled or failed; retrying..."
+            pkill -f playwright || true
+            sleep 5
+          done
+          sh setup.sh
+          ./wasibuild/build.sh
+          ./wasibuild/build.sh server
+          curl -sSf https://wasmtime.dev/install.sh | bash -s -- --version v46.0.1
+          export PATH=$HOME/.wasmtime/bin:$PATH
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install 6.0.3
+          ./emsdk activate 6.0.3
+          cd ..
+          source ./emsdk/emsdk_env.sh
+          cd emscriptenbuild
+          ./build.sh Release
+          ./build.sh Release-async
+          ./build.sh Release-opfs
+          cd ..
+          ln -s ../emscriptenbuild/libgit2/examples/lg2_opfs.js test-browser-opfs/lg2_opfs.js
+          ln -s ../emscriptenbuild/libgit2/examples/lg2_opfs.wasm test-browser-opfs/lg2_opfs.wasm
+          set -e
+          # startServer() in test-browser/githttpserver.js serves the test
+          # repositories with the wasm server instead of git http-backend
+          export GIT_SERVER=wasm
+          npm run test-wasi
+          npm run test-browser
+          npm run test-browser-async
+          npm run test-browser-opfs
   opfs:
     name: OPFS
     runs-on: ubuntu-latest
